@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useScrollAnimation } from "@/hooks/use-scroll-animation";
 import { cn } from "@/lib/utils";
 import {
@@ -149,9 +148,16 @@ const caseStudies: CaseStudy[] = [
   },
 ];
 
-export function CaseStudiesSection() {
+interface CaseStudiesSectionProps {
+  expandedStudy: string | null;
+  setExpandedStudy: (id: string | null) => void;
+}
+
+export function CaseStudiesSection({
+  expandedStudy,
+  setExpandedStudy,
+}: CaseStudiesSectionProps) {
   const { ref: headerRef, isVisible: headerVisible } = useScrollAnimation();
-  const [expandedStudy, setExpandedStudy] = useState<string | null>(null);
 
   return (
     <section id="case-studies" className="relative py-32">

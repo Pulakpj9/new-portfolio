@@ -8,7 +8,7 @@ import { useState } from "react";
 
 const projects = [
   {
-    id: "userActivityTracker",
+    id: "activity-tracker",
     title: "Activity Tracker",
     tagline: "Smart Activity Tracking for Modern Teams.",
     description:
@@ -16,16 +16,13 @@ const projects = [
     image: "/images/webtracker.png",
     tags: ["TypeScript", "Node.js", "MySQL", "Sequelize", "AWS S3"],
     color: "from-primary to-cyan-400",
-    // liveUrl: "#",
-    // githubUrl: "#",
     metrics: [
-      // { label: "Users", value: "120" },
       { label: "Data velocity (records/week)", value: "~1M (approx.)" },
       { label: "Uptime", value: "99.9%" },
     ],
   },
   {
-    id: "whatsappCRM",
+    id: "whatsapp-crm",
     title: "WhatsApp CRM",
     tagline: "Automate Conversations. Scale Customer Engagement.",
     description:
@@ -40,7 +37,7 @@ const projects = [
     ],
   },
   {
-    id: "salesApp",
+    id: "salesapp",
     title: "SalesApp",
     tagline: "Optimizing Field Sales Through Smart Automation.",
     description:
@@ -56,16 +53,38 @@ const projects = [
   },
 ];
 
-export function ProjectsSection() {
+type Project = (typeof projects)[number];
+
+interface ProjectsSectionProps {
+  expandedStudy: string | null;
+  setExpandedStudy: (id: string | null) => void;
+}
+
+export function ProjectsSection({
+  expandedStudy,
+  setExpandedStudy,
+}: ProjectsSectionProps) {
   const { ref: headerRef, isVisible: headerVisible } = useScrollAnimation();
+
+  const handleViewCaseStudy = (caseStudyId: string) => {
+    setExpandedStudy(caseStudyId);
+
+    setTimeout(() => {
+      const section = document.getElementById("case-studies");
+      if (section) {
+        section.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }
+    }, 180);
+  };
 
   return (
     <section id="projects" className="relative py-32">
-      {/* Background accent */}
       <div className="pointer-events-none absolute right-0 top-1/4 h-96 w-96 rounded-full bg-primary/3 blur-3xl" />
 
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
-        {/* Section header */}
         <div ref={headerRef} className="mb-20">
           <span
             className={cn(
@@ -90,10 +109,14 @@ export function ProjectsSection() {
           </h2>
         </div>
 
-        {/* Projects list */}
         <div className="flex flex-col gap-32">
           {projects.map((project, i) => (
-            <ProjectCard key={project.id} project={project} index={i} />
+            <ProjectCard
+              key={project.id}
+              project={project}
+              index={i}
+              onViewCaseStudy={handleViewCaseStudy}
+            />
           ))}
         </div>
       </div>
@@ -101,13 +124,13 @@ export function ProjectsSection() {
   );
 }
 
-function ProjectCard({
-  project,
-  index,
-}: {
-  project: (typeof projects)[0];
+interface ProjectCardProps {
+  project: Project;
   index: number;
-}) {
+  onViewCaseStudy: (id: string) => void;
+}
+
+function ProjectCard({ project, index, onViewCaseStudy }: ProjectCardProps) {
   const { ref, isVisible } = useScrollAnimation({ threshold: 0.15 });
   const [isHovered, setIsHovered] = useState(false);
   const isEven = index % 2 === 0;
@@ -120,14 +143,12 @@ function ProjectCard({
         isVisible ? "translate-y-0 opacity-100" : "translate-y-16 opacity-0",
       )}
     >
-      {/* Image */}
       <div className={cn("relative", isEven ? "lg:order-1" : "lg:order-2")}>
         <div
           className="relative overflow-hidden rounded-2xl border border-border/30 transition-all duration-700 group-hover:border-primary/20 group-hover:shadow-2xl group-hover:shadow-primary/10"
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
-          {/* Gradient overlay on hover */}
           <div
             className={cn(
               "absolute inset-0 z-10 bg-gradient-to-t from-background/80 via-transparent to-transparent transition-opacity duration-500",
@@ -135,18 +156,21 @@ function ProjectCard({
             )}
           />
 
-          {/* View project button on hover */}
           <div
             className={cn(
               "absolute inset-0 z-20 flex items-center justify-center transition-all duration-500",
               isHovered ? "opacity-100" : "opacity-0",
             )}
           >
-            <span className="flex items-center gap-2 rounded-full border border-foreground/20 bg-background/50 px-6 py-3 text-sm font-medium text-foreground backdrop-blur-sm transition-transform duration-300 group-hover:scale-105">
+            <button
+              onClick={() => onViewCaseStudy(project.id)}
+              className="flex items-center gap-2 rounded-full border border-foreground/20 bg-background/60 px-6 py-3 text-sm font-medium text-foreground backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:border-primary/40 hover:bg-background/80"
+            >
               View Case Study
               <ArrowUpRight className="h-4 w-4" />
-            </span>
+            </button>
           </div>
+
           {project.video ? (
             <video
               src={project.video}
@@ -161,7 +185,7 @@ function ProjectCard({
                 "w-full transition-transform duration-700",
                 isHovered ? "scale-105" : "scale-100",
               )}
-            ></video>
+            />
           ) : (
             <Image
               src={project.image || ""}
@@ -176,7 +200,6 @@ function ProjectCard({
           )}
         </div>
 
-        {/* Floating accent */}
         <div
           className={cn(
             "absolute -z-10 h-32 w-32 rounded-full blur-3xl transition-all duration-700",
@@ -189,7 +212,6 @@ function ProjectCard({
         />
       </div>
 
-      {/* Content */}
       <div className={cn(isEven ? "lg:order-2" : "lg:order-1")}>
         <span
           className={cn(
@@ -207,7 +229,6 @@ function ProjectCard({
           {project.description}
         </p>
 
-        {/* Metrics */}
         <div className="mt-8 flex gap-8">
           {project.metrics.map((metric) => (
             <div key={metric.label}>
@@ -221,7 +242,6 @@ function ProjectCard({
           ))}
         </div>
 
-        {/* Tags */}
         <div className="mt-8 flex flex-wrap gap-2">
           {project.tags.map((tag) => (
             <span
@@ -232,25 +252,6 @@ function ProjectCard({
             </span>
           ))}
         </div>
-
-        {/* Links
-        <div className="mt-8 flex items-center gap-4">
-          <a
-            href={project.liveUrl}
-            className="group/link inline-flex items-center gap-2 text-sm font-medium text-primary transition-all duration-300 hover:gap-3"
-          >
-            <ExternalLink className="h-4 w-4" />
-            Live Demo
-            <ArrowUpRight className="h-3 w-3 transition-transform duration-300 group-hover/link:-translate-y-0.5 group-hover/link:translate-x-0.5" />
-          </a>
-          <a
-            href={project.githubUrl}
-            className="group/link inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-all duration-300 hover:text-foreground hover:gap-3"
-          >
-            <Github className="h-4 w-4" />
-            Source Code
-          </a>
-        </div> */}
       </div>
     </div>
   );

@@ -1,18 +1,21 @@
-"use client"
+"use client";
 
-import { Navigation } from "@/components/navigation"
-import { HeroSection } from "@/components/hero-section"
-import { AboutSection } from "@/components/about-section"
-import { ExperienceSection } from "@/components/experience-section"
-import { TextMarquee } from "@/components/text-marquee"
-import { ProjectsSection } from "@/components/projects-section"
-import { CaseStudiesSection } from "@/components/case-studies-section"
-import { ContactSection } from "@/components/contact-section"
-import { Footer } from "@/components/footer"
-import { CursorFollower } from "@/components/cursor-follower"
-import { ScrollProgress } from "@/components/scroll-progress"
+import { useState } from "react";
+import { Navigation } from "@/components/navigation";
+import { HeroSection } from "@/components/hero-section";
+import { AboutSection } from "@/components/about-section";
+import { ExperienceSection } from "@/components/experience-section";
+import { TextMarquee } from "@/components/text-marquee";
+import { ProjectsSection } from "@/components/projects-section";
+import { CaseStudiesSection } from "@/components/case-studies-section";
+import { ContactSection } from "@/components/contact-section";
+import { Footer } from "@/components/footer";
+import { CursorFollower } from "@/components/cursor-follower";
+import { ScrollProgress } from "@/components/scroll-progress";
 
 export default function Page() {
+  const [expandedStudy, setExpandedStudy] = useState<string | null>(null);
+
   return (
     <main className="relative">
       <ScrollProgress />
@@ -47,10 +50,19 @@ export default function Page() {
         speed={35}
         className="py-8"
       />
-      <ProjectsSection />
-      <CaseStudiesSection />
+
+      <ProjectsSection
+        expandedStudy={expandedStudy}
+        setExpandedStudy={setExpandedStudy}
+      />
+
+      <CaseStudiesSection
+        expandedStudy={expandedStudy}
+        setExpandedStudy={setExpandedStudy}
+      />
+
       <ContactSection />
       <Footer />
     </main>
-  )
+  );
 }
