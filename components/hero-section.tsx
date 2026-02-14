@@ -24,13 +24,13 @@ export function HeroSection() {
         className="absolute inset-0 z-0"
         style={{ transform: `translateY(${parallaxOffset}px)` }}
       >
-        <Image
-          src="/images/hero-bg.jpg"
+        {/* <Image
+          src="/images/salesapp.png"
           alt=""
           fill
           className="object-cover opacity-40"
           priority
-        />
+        /> */}
         <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/40 to-background" />
       </div>
 
@@ -87,7 +87,8 @@ export function HeroSection() {
         <p
           className={`mx-auto mt-8 max-w-2xl text-lg leading-relaxed text-muted-foreground md:text-xl transition-all duration-1000 delay-400 ${loaded ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"}`}
         >
-          Backend focused full stack developer with Hands-on Experience in Solution Design and Implementation
+          Backend focused full stack developer with Hands-on Experience in
+          Solution Design and Implementation
         </p>
 
         {/* CTA buttons */}

@@ -21,8 +21,8 @@ const contactLinks = [
 ]
 
 const socialLinks = [
-  { label: "GitHub", href: "#https://github.com/Pulakpj9", icon: Github },
-  { label: "LinkedIn", href: "https://www.linkedin.com/in/pulak-jain-aa1053203/#", icon: Linkedin },
+  { label: "GitHub", href: "https://github.com/Pulakpj9", icon: Github },
+  { label: "LinkedIn", href: "https://www.linkedin.com/in/pulak-jain-aa1053203", icon: Linkedin },
   // { label: "Twitter", href: "#", icon: Twitter },
 ]
 
