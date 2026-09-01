@@ -207,7 +207,7 @@ function ProjectCard({ project, index, onViewCaseStudy }: ProjectCardProps) {
             isHovered ? "opacity-30" : "opacity-0",
           )}
           style={{
-            background: `linear-gradient(135deg, hsl(175 80% 50%), hsl(200 80% 60%))`,
+            background: `linear-gradient(135deg, hsl(var(--primary)), hsl(var(--gradient-secondary)))`,
           }}
         />
       </div>

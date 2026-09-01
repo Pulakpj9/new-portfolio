@@ -44,6 +44,10 @@ const config: Config = {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
+        'gradient-secondary': 'hsl(var(--gradient-secondary))',
+        'glass-bg': 'hsl(var(--glass-bg))',
+        'glass-border': 'hsl(var(--glass-border))',
+        overlay: 'hsl(var(--overlay))',
         chart: {
           '1': 'hsl(var(--chart-1))',
           '2': 'hsl(var(--chart-2))',
@@ -105,8 +109,8 @@ const config: Config = {
           '50%': { transform: 'translateY(-10px)' },
         },
         'pulse-glow': {
-          '0%, 100%': { boxShadow: '0 0 20px hsl(175 80% 50% / 0.1)' },
-          '50%': { boxShadow: '0 0 40px hsl(175 80% 50% / 0.3)' },
+          '0%, 100%': { boxShadow: '0 0 20px hsl(var(--primary) / 0.1)' },
+          '50%': { boxShadow: '0 0 40px hsl(var(--primary) / 0.3)' },
         },
       },
       animation: {

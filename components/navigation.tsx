@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import { Menu, X } from "lucide-react"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 const navLinks = [
   { label: "About", href: "#about" },
@@ -88,16 +89,22 @@ export function Navigation() {
             >
               Get in Touch
             </a>
+            <div className="ml-3">
+              <ThemeToggle />
+            </div>
           </div>
 
           {/* Mobile toggle */}
-          <button
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="relative z-50 flex items-center justify-center rounded-full p-2 text-foreground transition-colors hover:text-primary md:hidden"
-            aria-label="Toggle menu"
-          >
-            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+          <div className="flex items-center gap-2 md:hidden">
+            <ThemeToggle />
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="relative z-50 flex items-center justify-center rounded-full p-2 text-foreground transition-colors hover:text-primary"
+              aria-label="Toggle menu"
+            >
+              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
         </div>
       </nav>
 
@@ -110,7 +117,7 @@ export function Navigation() {
             : "invisible opacity-0"
         )}
         style={{
-          background: "hsl(222 47% 5% / 0.95)",
+          background: "hsl(var(--overlay) / 0.95)",
           backdropFilter: "blur(30px)",
         }}
       >

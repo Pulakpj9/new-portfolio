@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParallax, useMousePosition } from "@/hooks/use-scroll-animation";
 import { MagneticButton } from "@/components/magnetic-button";
 import { ArrowDown, Github, Linkedin, Twitter } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import Image from "next/image";
 
 export function HeroSection() {
@@ -39,7 +40,7 @@ export function HeroSection() {
         className="pointer-events-none absolute z-10 h-96 w-96 rounded-full opacity-20 blur-3xl transition-transform duration-700"
         style={{
           background:
-            "radial-gradient(circle, hsl(175 80% 50%), transparent 70%)",
+            "radial-gradient(circle, hsl(var(--primary)), transparent 70%)",
           transform: `translate(${x * 0.02 - 200}px, ${y * 0.02 - 200}px)`,
         }}
       />
@@ -47,16 +48,16 @@ export function HeroSection() {
         className="pointer-events-none absolute right-0 top-1/4 z-10 h-72 w-72 rounded-full opacity-15 blur-3xl transition-transform duration-1000"
         style={{
           background:
-            "radial-gradient(circle, hsl(200 80% 60%), transparent 70%)",
+            "radial-gradient(circle, hsl(var(--gradient-secondary)), transparent 70%)",
           transform: `translate(${-x * 0.015}px, ${y * 0.015 - 100}px)`,
         }}
       />
 
       {/* Grid pattern overlay */}
       <div
-        className="absolute inset-0 z-10 opacity-[0.03]"
+        className="absolute inset-0 z-10 opacity-[0.04]"
         style={{
-          backgroundImage: `linear-gradient(hsl(175 80% 50%) 1px, transparent 1px), linear-gradient(90deg, hsl(175 80% 50%) 1px, transparent 1px)`,
+          backgroundImage: `linear-gradient(hsl(var(--grid-line)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--grid-line)) 1px, transparent 1px)`,
           backgroundSize: "80px 80px",
         }}
       />
@@ -140,8 +141,8 @@ export function HeroSection() {
       </div>
 
       {/* Scroll indicator */}
-      <div
-        className={`absolute bottom-8 left-1/2 z-20 -translate-x-1/2 transition-all duration-1000 delay-1000 ${loaded ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"}`}
+      {/* <div
+        className={`absolute bottom-8 right-10 z-20 -translate-x-1/2 transition-all duration-1000 delay-1000 ${loaded ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"}`}
       >
         <div className="flex flex-col items-center gap-2">
           <span className="text-xs uppercase tracking-widest text-muted-foreground">
@@ -149,6 +150,22 @@ export function HeroSection() {
           </span>
           <div className="relative h-12 w-6 rounded-full border border-border/50">
             <div className="absolute left-1/2 top-2 h-2 w-1 -translate-x-1/2 animate-bounce rounded-full bg-primary" />
+          </div>
+        </div>
+      </div> */}
+      <div
+        className={`absolute bottom-8 left-1/2 z-20 -translate-x-1/2 transition-all duration-1000 delay-1000 ${
+          loaded ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
+        }`}
+      >
+        <div className="flex flex-col items-center gap-5">
+          <span className="text-xs uppercase tracking-widest text-muted-foreground">
+            Know More
+          </span>
+
+          <div className="flex flex-col -space-y-4 animate-bounce">
+            <ChevronDown className="h-6 w-6 text-primary" />
+            <ChevronDown className="h-6 w-6 text-primary" />
           </div>
         </div>
       </div>
