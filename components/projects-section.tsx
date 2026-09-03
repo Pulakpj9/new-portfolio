@@ -81,7 +81,7 @@ export function ProjectsSection({
   };
 
   return (
-    <section id="projects" className="relative py-32">
+    <section id="projects" className="scene-projects scene-block relative py-32">
       <div className="pointer-events-none absolute right-0 top-1/4 h-96 w-96 rounded-full bg-primary/3 blur-3xl" />
 
       <div className="mx-auto max-w-7xl px-6 lg:px-8">

@@ -18,7 +18,7 @@ export function ThemeToggle() {
     if (!meta) return
     meta.setAttribute(
       "content",
-      resolvedTheme === "dark" ? "#0a0f1c" : "#f8f6f2"
+      resolvedTheme === "dark" ? "#0a0f1c" : "#222222"
     )
   }, [resolvedTheme])
 

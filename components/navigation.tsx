@@ -12,14 +12,27 @@ const navLinks = [
   { label: "Contact", href: "#contact" },
 ]
 
+const DARK_SECTIONS = new Set(["projects"])
+
 export function Navigation() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [activeSection, setActiveSection] = useState("")
+  const [navVariant, setNavVariant] = useState<"light" | "dark">("light")
 
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50)
+
+      const navHeight = 80
+      const els = document.querySelectorAll<HTMLElement>("section[id], footer")
+      for (const el of els) {
+        const rect = el.getBoundingClientRect()
+        if (rect.top <= navHeight && rect.bottom > navHeight) {
+          setNavVariant(DARK_SECTIONS.has(el.id) ? "dark" : "light")
+          break
+        }
+      }
     }
 
     const observerCallback = (entries: IntersectionObserverEntry[]) => {
@@ -40,6 +53,7 @@ export function Navigation() {
     })
 
     window.addEventListener("scroll", handleScroll, { passive: true })
+    handleScroll()
     return () => {
       window.removeEventListener("scroll", handleScroll)
       observer.disconnect()
@@ -51,9 +65,11 @@ export function Navigation() {
       <nav
         className={cn(
           "fixed top-0 left-0 right-0 z-50 transition-all duration-500",
-          isScrolled
-            ? "glass py-3"
-            : "bg-transparent py-6"
+          navVariant === "dark"
+            ? "scene-nav-dark glass py-3"
+            : isScrolled
+              ? "scene-nav-light glass py-3"
+              : "scene-nav-light bg-transparent py-6"
         )}
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 lg:px-8">
@@ -111,7 +127,7 @@ export function Navigation() {
       {/* Mobile menu overlay */}
       <div
         className={cn(
-          "fixed inset-0 z-40 flex flex-col items-center justify-center gap-6 transition-all duration-500 md:hidden",
+          "scene-nav-overlay fixed inset-0 z-40 flex flex-col items-center justify-center gap-6 transition-all duration-500 md:hidden",
           isMobileMenuOpen
             ? "visible opacity-100"
             : "invisible opacity-0"

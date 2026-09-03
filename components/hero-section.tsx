@@ -19,7 +19,7 @@ export function HeroSection() {
   const parallaxOffset = scrollY * 0.4;
 
   return (
-    <section className="relative flex min-h-screen items-center justify-center overflow-hidden">
+    <section className="scene-hero scene-block relative flex min-h-screen items-center justify-center overflow-hidden">
       {/* Background image with parallax */}
       <div
         className="absolute inset-0 z-0"

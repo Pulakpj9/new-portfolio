@@ -12,7 +12,7 @@ export function TextMarquee({ items, className, speed = 30 }: TextMarqueeProps) 
   const duplicatedItems = [...items, ...items]
 
   return (
-    <div className={cn("relative overflow-hidden py-12", className)}>
+    <div className={cn("scene-marquee scene-block relative overflow-hidden py-12", className)}>
       {/* Fade edges */}
       <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-32 bg-gradient-to-r from-background to-transparent" />
       <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-32 bg-gradient-to-l from-background to-transparent" />

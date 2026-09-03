@@ -45,7 +45,7 @@ export function AboutSection() {
   const { ref: skillsRef, isVisible: skillsVisible } = useScrollAnimation();
 
   return (
-    <section id="about" className="relative py-32">
+    <section id="about" className="scene-about scene-block relative py-32">
       {/* Section background accent */}
       <div className="pointer-events-none absolute left-0 top-1/3 h-96 w-96 rounded-full bg-primary/5 blur-3xl" />
 

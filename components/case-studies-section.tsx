@@ -160,7 +160,7 @@ export function CaseStudiesSection({
   const { ref: headerRef, isVisible: headerVisible } = useScrollAnimation();
 
   return (
-    <section id="case-studies" className="relative py-32">
+    <section id="case-studies" className="scene-case-study scene-block relative py-32">
       {/* Background accents */}
       <div className="pointer-events-none absolute left-1/2 top-0 h-px w-3/4 -translate-x-1/2 bg-gradient-to-r from-transparent via-border to-transparent" />
       <div className="pointer-events-none absolute right-0 top-1/3 h-96 w-96 rounded-full bg-primary/3 blur-3xl" />

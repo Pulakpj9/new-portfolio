@@ -48,7 +48,7 @@ export default function Page() {
           "APIs",
         ]}
         speed={35}
-        className="py-8"
+        className="py-8 scene-marquee-dark"
       />
 
       <ProjectsSection

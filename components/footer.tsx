@@ -8,7 +8,7 @@ export function Footer() {
   }
 
   return (
-    <footer className="relative border-t border-border/30 py-12">
+    <footer className="scene-footer scene-block relative border-t border-border/30 py-12">
       <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-6 sm:flex-row lg:px-8">
         <div className="flex items-center gap-4">
           <a
