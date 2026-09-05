@@ -177,6 +177,14 @@ html {
   border: 1px solid hsl(var(--glass-border) / 0.5);
 }
 
+/* Floating grid icons — gentle drift across the hero grid */
+@keyframes icon-float {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(4px, -6px); }
+  50% { transform: translate(-3px, -9px); }
+  75% { transform: translate(-5px, -3px); }
+}
+
 /* Noise texture overlay */
 .noise::before {
   content: '';

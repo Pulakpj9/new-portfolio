@@ -3,7 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParallax, useMousePosition } from "@/hooks/use-scroll-animation";
 import { MagneticButton } from "@/components/magnetic-button";
-import { ArrowDown, ArrowUpRight, Briefcase, Building2 } from "lucide-react";
+import { HeroGridIcons } from "@/components/hero-grid-icons";
+import { ArrowDown, ArrowUpRight, Briefcase, Building2, Github, Linkedin } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Card {
@@ -16,7 +17,6 @@ interface Card {
 }
 
 const cards: Card[] = [
-  { id: "profile", type: "profile" },
   {
     id: "projects",
     type: "link",
@@ -25,6 +25,7 @@ const cards: Card[] = [
     title: "Selected Work",
     subtitle: "View Projects",
   },
+  { id: "profile", type: "profile" },
   {
     id: "experience",
     type: "link",
@@ -35,6 +36,9 @@ const cards: Card[] = [
   },
 ];
 
+/* Auto-rotate interval (ms) between cards */
+const AUTO_ROTATE_INTERVAL = 5000;
+
 function getCardTransform(index: number, active: number) {
   const offset = index - active;
   const rotation = offset * 10;
@@ -43,7 +47,9 @@ function getCardTransform(index: number, active: number) {
     transform: `rotate(${rotation}deg) translateY(-${distance * 8}px)`,
     transformOrigin: "bottom center",
     zIndex: 30 - distance * 10,
-    opacity: 1 - distance * 0.22,
+    opacity: distance === 0 ? 1 : 0.85,
+    filter: `brightness(${1 - distance * 0.06})`,
+    boxShadow: `0 ${4 + distance * 6}px ${12 + distance * 10}px -2px rgba(0,0,0,${0.15 + distance * 0.12})`,
   };
 }
 
@@ -51,11 +57,19 @@ export function HeroSection() {
   const scrollY = useParallax();
   const { x, y } = useMousePosition();
   const [loaded, setLoaded] = useState(false);
-  const [activeCard, setActiveCard] = useState(0);
+  const [activeCard, setActiveCard] = useState(1);
 
   useEffect(() => {
     setLoaded(true);
   }, []);
+
+  /* Auto-rotate through cards in a loop */
+  // useEffect(() => {
+  //   const id = setInterval(() => {
+  //     setActiveCard((prev) => (prev + 1) % cards.length);
+  //   }, AUTO_ROTATE_INTERVAL);
+  //   return () => clearInterval(id);
+  // }, []);
 
   const parallaxOffset = scrollY * 0.4;
 
@@ -106,12 +120,16 @@ export function HeroSection() {
         }}
       />
 
+      {/* Floating interactive icons on the grid */}
+      <HeroGridIcons />
+
       {/* Content */}
       <div className="relative z-20 mx-auto w-full max-w-7xl px-6 py-10 lg:py-0">
         {/* Top row — intro text + card carousel */}
         <div className="grid grid-cols-1 items-end gap-10 lg:mt-20 lg:grid-cols-[1fr_auto] lg:gap-20">
           {/* Intro text */}
           <div
+            id="hero-heading"
             className={cn(
               "flex flex-col items-center text-center lg:items-start lg:text-left",
               "transition-all duration-1000 delay-200",
@@ -131,6 +149,7 @@ export function HeroSection() {
 
           {/* Card carousel — only as wide as needed, pushed to the right */}
           <div
+            id="hero-cards"
             className={cn(
               "flex flex-col items-center lg:justify-self-end",
               "transition-all duration-1000 delay-500",
@@ -148,13 +167,12 @@ export function HeroSection() {
                       key={card.id}
                       onClick={() => handleCardClick(index)}
                       className={cn(
-                        "absolute inset-0 overflow-hidden rounded-2xl border border-primary-foreground/10 transition-shadow duration-500",
-                        isActive ? "shadow-2xl" : "shadow-lg",
+                        "absolute inset-0 overflow-hidden rounded-2xl border border-primary-foreground/10",
                       )}
                       style={{
                         ...style,
                         transition:
-                          "transform 0.5s cubic-bezier(0.23,1,0.32,1), opacity 0.5s ease, box-shadow 0.5s ease",
+                          "transform 0.5s cubic-bezier(0.23,1,0.32,1), opacity 0.5s ease, filter 0.5s ease, box-shadow 0.5s ease",
                       }}
                     >
                       <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-primary via-primary to-primary/80">
@@ -181,13 +199,12 @@ export function HeroSection() {
                       }
                     }}
                     className={cn(
-                      "absolute inset-0 flex cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl border border-border/50 bg-card transition-shadow duration-500",
-                      isActive ? "shadow-2xl" : "shadow-lg hover:shadow-xl",
+                      "absolute inset-0 flex cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl border border-border bg-white transition-colors duration-300 hover:bg-neutral-50",
                     )}
                     style={{
                       ...style,
                       transition:
-                        "transform 0.5s cubic-bezier(0.23,1,0.32,1), opacity 0.5s ease, box-shadow 0.5s ease",
+                        "transform 0.5s cubic-bezier(0.23,1,0.32,1), opacity 0.5s ease, filter 0.5s ease, box-shadow 0.5s ease, background-color 0.3s ease",
                     }}
                   >
                     {card.icon && (
@@ -230,6 +247,7 @@ export function HeroSection() {
 
         {/* Bottom — subtitle + buttons */}
         <div
+          id="hero-bottom"
           className={cn(
             "mt-16 flex flex-col items-center text-center lg:mt-10 lg:items-start lg:text-left",
             "transition-all duration-1000 delay-700",
@@ -255,6 +273,26 @@ export function HeroSection() {
             >
               Let&apos;s Talk
             </MagneticButton>
+            <div className="flex items-center gap-3">
+              <a
+                href="https://github.com/Pulakpj9"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="GitHub"
+                className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-border text-foreground transition-colors duration-300 hover:border-primary/50 hover:bg-primary/10 hover:text-primary"
+              >
+                <Github className="h-5 w-5" />
+              </a>
+              <a
+                href="https://www.linkedin.com/in/pulak-jain-aa1053203"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="LinkedIn"
+                className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-border text-foreground transition-colors duration-300 hover:border-primary/50 hover:bg-primary/10 hover:text-primary"
+              >
+                <Linkedin className="h-5 w-5" />
+              </a>
+            </div>
           </div>
         </div>
       </div>
