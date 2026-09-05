@@ -46,7 +46,7 @@ export function ExperienceSection() {
   const { ref: headerRef, isVisible: headerVisible } = useScrollAnimation();
 
   return (
-    <section className="scene-experience scene-block relative py-32">
+    <section id="experience" className="scene-experience scene-block relative py-32">
       {/* Divider */}
       <div className="pointer-events-none absolute left-1/2 top-0 h-px w-3/4 -translate-x-1/2 bg-gradient-to-r from-transparent via-border to-transparent" />
 
