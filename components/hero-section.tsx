@@ -113,7 +113,7 @@ export function HeroSection() {
 
       {/* Grid pattern */}
       <div
-        className="absolute inset-0 z-10 opacity-[0.05]"
+        className="absolute inset-0 z-10 opacity-[0.055]"
         style={{
           backgroundImage: `linear-gradient(hsl(var(--grid-line)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--grid-line)) 1px, transparent 1px)`,
           backgroundSize: "80px 80px",
@@ -124,7 +124,7 @@ export function HeroSection() {
       <HeroGridIcons />
 
       {/* Content */}
-      <div className="relative z-20 mx-auto w-full max-w-7xl px-6 py-10 lg:py-0">
+      <div className="pointer-events-none relative z-20 mx-auto w-full max-w-7xl px-6 py-10 lg:py-0">
         {/* Top row — intro text + card carousel */}
         <div className="grid grid-cols-1 items-end gap-10 lg:mt-20 lg:grid-cols-[1fr_auto] lg:gap-20">
           {/* Intro text */}
@@ -151,7 +151,7 @@ export function HeroSection() {
           <div
             id="hero-cards"
             className={cn(
-              "flex flex-col items-center lg:justify-self-end",
+              "pointer-events-auto flex flex-col items-center lg:justify-self-end",
               "transition-all duration-1000 delay-500",
               loaded ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0",
             )}
@@ -259,7 +259,7 @@ export function HeroSection() {
             Solution Design and Implementation
           </p>
 
-          <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row">
+          <div className="pointer-events-auto mt-10 flex flex-col items-center gap-4 sm:flex-row">
             <MagneticButton
               href="#projects"
               className="bg-primary text-primary-foreground hover:shadow-lg hover:shadow-primary/25"
