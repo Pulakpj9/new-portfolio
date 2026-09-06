@@ -195,7 +195,7 @@ export function HeroSection() {
           >
             <h1 className="font-display text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl">
               <span className="block text-foreground">
-                Hi, I&apos;m Pulak 👋
+                Hi, I&apos;m Pulak <span className="wave-hand">👋</span>
               </span>
               <span className="gradient-text block">Your Go-To →</span>
               <span className="block text-foreground">

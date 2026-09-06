@@ -12,6 +12,7 @@ import { ContactSection } from "@/components/contact-section";
 import { Footer } from "@/components/footer";
 import { CursorFollower } from "@/components/cursor-follower";
 import { ScrollProgress } from "@/components/scroll-progress";
+import { ChatAssistant } from "@/components/chat-assistant";
 
 export default function Page() {
   const [expandedStudy, setExpandedStudy] = useState<string | null>(null);
@@ -63,6 +64,7 @@ export default function Page() {
 
       <ContactSection />
       <Footer />
+      <ChatAssistant />
     </main>
   );
 }

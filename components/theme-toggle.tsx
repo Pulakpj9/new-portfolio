@@ -49,7 +49,7 @@ export function ThemeToggle() {
       onClick={() => setTheme(isDark ? "light" : "dark")}
       className={cn(
         "relative flex h-9 w-9 items-center justify-center rounded-full",
-        "border border-border/50 bg-secondary/50 text-muted-foreground",
+        "border border-border/50 dark:bg-secondary/50 text-muted-foreground",
         "transition-all duration-300 hover:border-primary/30 hover:bg-primary/10 hover:text-primary",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       )}

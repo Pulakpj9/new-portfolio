@@ -153,6 +153,24 @@ html {
   border: 1px solid hsl(var(--glass-border) / 0.5);
 }
 
+/* Wave the hand emoji on load — a friendly "hi" as the heading fades in */
+@keyframes wave-hand {
+  0% { transform: rotate(0deg); }
+  10% { transform: rotate(30deg); }
+  25% { transform: rotate(-20deg); }
+  40% { transform: rotate(28deg); }
+  55% { transform: rotate(-15deg); }
+  70% { transform: rotate(20deg); }
+  85% { transform: rotate(-5deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.wave-hand {
+  display: inline-block;
+  transform-origin: 70% 70%;
+  animation: wave-hand 1.2s ease-in-out 1.2s 1 both;
+}
+
 /* Floating grid icons — gentle drift across the hero grid */
 @keyframes icon-float {
   0%, 100% { transform: translate(0, 0); }
