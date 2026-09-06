@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState, useCallback } from "react"
+import { useEffect, useState, useCallback } from "react"
 
 interface UseScrollAnimationOptions {
   threshold?: number
@@ -13,19 +13,18 @@ export function useScrollAnimation({
   rootMargin = "0px 0px -50px 0px",
   triggerOnce = true,
 }: UseScrollAnimationOptions = {}) {
-  const ref = useRef<HTMLDivElement>(null)
+  const [node, setNode] = useState<HTMLDivElement | null>(null)
   const [isVisible, setIsVisible] = useState(false)
 
   useEffect(() => {
-    const element = ref.current
-    if (!element) return
+    if (!node) return
 
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
           setIsVisible(true)
           if (triggerOnce) {
-            observer.unobserve(element)
+            observer.unobserve(node)
           }
         } else if (!triggerOnce) {
           setIsVisible(false)
@@ -34,11 +33,15 @@ export function useScrollAnimation({
       { threshold, rootMargin }
     )
 
-    observer.observe(element)
+    observer.observe(node)
     return () => observer.disconnect()
-  }, [threshold, rootMargin, triggerOnce])
+  }, [node, threshold, rootMargin, triggerOnce])
 
-  return { ref, isVisible }
+  const setRef = useCallback((el: HTMLDivElement | null) => {
+    setNode(el)
+  }, [])
+
+  return { ref: setRef, isVisible }
 }
 
 export function useParallax() {
