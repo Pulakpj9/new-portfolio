@@ -8,31 +8,7 @@
   }
 }
 
-/* Aeonik — drop font files into /public/fonts/ to activate */
-@font-face {
-  font-family: 'Aeonik';
-  src: url('/fonts/Aeonik-Regular.woff2') format('woff2'),
-       url('/fonts/Aeonik-Regular.woff') format('woff');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Aeonik';
-  src: url('/fonts/Aeonik-Medium.woff2') format('woff2'),
-       url('/fonts/Aeonik-Medium.woff') format('woff');
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Aeonik';
-  src: url('/fonts/Aeonik-Bold.woff2') format('woff2'),
-       url('/fonts/Aeonik-Bold.woff') format('woff');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
+/* Inter (via next/font) is used across the site — no self-hosted webfonts shipped */
 
 @layer base {
   :root {
