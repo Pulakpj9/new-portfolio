@@ -64,12 +64,12 @@ export function HeroSection() {
   }, []);
 
   /* Auto-rotate through cards in a loop */
-  // useEffect(() => {
-  //   const id = setInterval(() => {
-  //     setActiveCard((prev) => (prev + 1) % cards.length);
-  //   }, AUTO_ROTATE_INTERVAL);
-  //   return () => clearInterval(id);
-  // }, []);
+  useEffect(() => {
+    const id = setInterval(() => {
+      setActiveCard((prev) => (prev + 1) % cards.length);
+    }, AUTO_ROTATE_INTERVAL);
+    return () => clearInterval(id);
+  }, []);
 
   const parallaxOffset = scrollY * 0.4;
 
@@ -175,7 +175,8 @@ export function HeroSection() {
                           "transform 0.5s cubic-bezier(0.23,1,0.32,1), opacity 0.5s ease, filter 0.5s ease, box-shadow 0.5s ease",
                       }}
                     >
-                      <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-primary via-primary to-primary/80">
+                      <div className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-primary via-primary to-primary/90">
+                        <div className="pointer-events-none absolute inset-0 dark:bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.28),dark:transparent_60%)]" />
                         <span className="font-display text-7xl font-bold text-primary-foreground/90 sm:text-8xl">
                           PJ
                         </span>
@@ -200,6 +201,7 @@ export function HeroSection() {
                     }}
                     className={cn(
                       "absolute inset-0 flex cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl border border-border bg-white transition-colors duration-300 hover:bg-neutral-50",
+                      "dark:border-white/10 dark:bg-gradient-to-b dark:from-secondary dark:to-card dark:hover:border-primary/40",
                     )}
                     style={{
                       ...style,
