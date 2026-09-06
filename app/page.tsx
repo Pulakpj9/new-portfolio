@@ -37,6 +37,7 @@ export default function Page() {
           "Docker",
           "AWS",
         ]}
+        blend
       />
       <AboutSection />
       <ExperienceSection />

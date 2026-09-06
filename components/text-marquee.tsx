@@ -6,16 +6,21 @@ interface TextMarqueeProps {
   items: string[]
   className?: string
   speed?: number
+  blend?: boolean
 }
 
-export function TextMarquee({ items, className, speed = 30 }: TextMarqueeProps) {
+export function TextMarquee({ items, className, speed = 30, blend }: TextMarqueeProps) {
   const duplicatedItems = [...items, ...items]
 
   return (
-    <div className={cn("scene-marquee scene-block relative overflow-hidden py-12", className)}>
+    <div className={cn("scene-marquee scene-block relative overflow-hidden py-12", blend && "scene-marquee-blend", className)}>
       {/* Fade edges */}
-      <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-32 bg-gradient-to-r from-background to-transparent" />
-      <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-32 bg-gradient-to-l from-background to-transparent" />
+      {!blend && (
+        <>
+          <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-32 bg-gradient-to-r from-background to-transparent" />
+          <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-32 bg-gradient-to-l from-background to-transparent" />
+        </>
+      )}
 
       <div
         className="flex animate-scroll gap-8 whitespace-nowrap"

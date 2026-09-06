@@ -153,6 +153,46 @@ html {
   border: 1px solid hsl(var(--glass-border) / 0.5);
 }
 
+/* Marquee blend strip — solders the gradient between two sections. Light:
+   hero white (top) flowing into about near-white (bottom). Dark: flat navy
+   to match the scene. */
+/* Marquee blend strip — solders the gradient between two sections. Light:
+   hero white (top) flowing into a slate near-white (bottom) that pairs with
+   the About section. Dark: flat navy to match the scene. */
+.scene-marquee-blend {
+  background: linear-gradient(180deg, #ffffff 0%, #e4e7ea 100%);
+}
+
+.dark .scene-marquee-blend {
+  background: linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--background)) 100%);
+}
+
+/* Side fades share the same gradient stack and mask away only the edges, so
+   the blend stays continuous all the way to the strip's borders. */
+.scene-marquee-blend::before,
+.scene-marquee-blend::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 10;
+  width: 9rem;
+  pointer-events: none;
+  background: inherit;
+}
+
+.scene-marquee-blend::before {
+  left: 0;
+  -webkit-mask-image: linear-gradient(90deg, #000, transparent);
+  mask-image: linear-gradient(90deg, #000, transparent);
+}
+
+.scene-marquee-blend::after {
+  right: 0;
+  -webkit-mask-image: linear-gradient(270deg, #000, transparent);
+  mask-image: linear-gradient(270deg, #000, transparent);
+}
+
 /* Wave the hand emoji on load — a friendly "hi" as the heading fades in */
 @keyframes wave-hand {
   0% { transform: rotate(0deg); }
