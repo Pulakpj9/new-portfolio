@@ -68,6 +68,62 @@ export function ExperienceSection() {
   const accent = dark ? "text-teal-300" : "text-slate-700";
   const caption = dark ? "text-slate-300" : "text-muted-foreground";
 
+  /* Roles index — Terminal (locked): clickable `roles — zsh` window, every item links to its card */
+  const rolesIndex = () => {
+    return (
+        <div className="mt-4 overflow-hidden rounded-xl border border-slate-800/40 bg-slate-900 shadow-[0_16px_40px_-20px_rgba(15,23,42,0.5)]">
+          <div className="flex items-center gap-1.5 border-b border-white/10 px-4 py-2.5">
+            <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
+            <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
+            <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
+            <span className="ml-2 font-mono text-[11px] text-slate-400">roles — zsh</span>
+          </div>
+          <div className="py-1.5 font-mono text-xs">
+            {experiences.map((exp, i) => (
+              <a
+                key={exp.period}
+                href={`#experience-${i}`}
+                className="group block px-4 py-2.5 transition-colors duration-200 hover:bg-white/5"
+              >
+                <p className="text-slate-100 transition-colors group-hover:text-teal-300">
+                  <span className="mr-2 text-teal-400">❯</span>
+                  {exp.company.toLowerCase().replace(/[^a-z0-9]+/g, "-")}
+                </p>
+                <p className="mt-0.5 pl-6 text-[11px] text-slate-400">
+                  {exp.role} · {exp.period}
+                </p>
+              </a>
+            ))}
+          </div>
+        </div>
+      );
+  };
+
+  /* Sticky — locked editorial split: sticky intro + numbered index, cards scroll beside */
+  const stickyView = () => (
+    <div className="grid gap-10 lg:grid-cols-[auto_1fr] lg:gap-14">
+      <div className="lg:sticky lg:top-24 lg:max-w-xs lg:self-start">
+        {headerBlock()}
+        <p className={cn("mt-5 max-w-sm text-base leading-relaxed", caption)}>
+          Backend engineering across {experiences.length} industries - healthcare, education, and enterprise - always infrastructure-first.
+        </p>
+        <div className="mt-8 hidden lg:block">
+          <p className={cn("font-mono text-xs uppercase tracking-widest", dark ? "text-slate-400" : "text-muted-foreground")}>Roles</p>
+          {rolesIndex()}
+        </div>
+      </div>
+      <div className="flex flex-col gap-5">
+        {experiences.map((exp, i) => (
+          <div key={exp.period} id={`experience-${i}`} className="scroll-mt-28">
+            <Reveal i={i}>
+              <CardBody exp={exp} dark={dark} accent={accent} face={faceClass} />
+            </Reveal>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
   const headerBlock = () => (
     <div ref={headerRef}>
       <span
@@ -102,37 +158,8 @@ export function ExperienceSection() {
       <div className="pointer-events-none absolute left-1/2 top-0 h-px w-3/4 -translate-x-1/2 bg-gradient-to-r from-transparent via-border to-transparent" />
 
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
-        {/* Sticky — editorial split: sticky intro + numbered index, cards scroll beside */}
-        <div className="grid gap-10 lg:grid-cols-[auto_1fr] lg:gap-14">
-          <div className="lg:sticky lg:top-24 lg:max-w-xs lg:self-start">
-            {headerBlock()}
-            <p className={cn("mt-5 max-w-sm text-base leading-relaxed", caption)}>
-              Backend engineering across {experiences.length} industries - healthcare, education, and enterprise - always infrastructure-first.
-            </p>
-            <div className="mt-8 hidden lg:block">
-              <p className={cn("font-mono text-xs uppercase tracking-widest", dark ? "text-slate-400" : "text-muted-foreground")}>Roles</p>
-              <ul className="mt-3 flex flex-col gap-3">
-                {experiences.map((exp, i) => (
-                  <li key={exp.period} className={cn("flex items-baseline gap-3", dark ? "text-slate-300" : "text-foreground")}>
-                    <span className={cn("font-mono text-xs", dark ? "text-teal-300" : "text-primary")}>0{i + 1}</span>
-                    <div>
-                      <p className={cn("font-display text-sm font-semibold", dark ? "text-white" : "text-foreground")}>{exp.company}</p>
-                      <p className={cn("font-mono text-xs", caption)}>{exp.period}</p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-          <div className="flex flex-col gap-5">
-            {experiences.map((exp, i) => (
-              <Reveal i={i} key={exp.period}>
-                <CardBody exp={exp} dark={dark} accent={accent} face={faceClass} />
-              </Reveal>
-            ))}
-          </div>
+        {stickyView()}
         </div>
-      </div>
     </section>
   );
 }

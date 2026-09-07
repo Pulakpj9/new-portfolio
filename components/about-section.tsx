@@ -163,70 +163,188 @@ function SkillCard({
   skill,
   index,
   visible,
+  variant,
+  accentOverride,
+  blackText = false,
 }: {
   skill: (typeof skills)[number];
   index: number;
   visible: boolean;
+  variant: "dark" | "neon" | "cloud" | "outline" | "sherbet" | "punch" | "soft" | "solidtint";
+  accentOverride?: string;
+  blackText?: boolean;
 }) {
+  const accent = accentOverride ?? skill.accent;
+  const isDarkText = variant === "dark" || variant === "punch" || variant === "neon";
+
+  /* Locked skill-card treatment — Mist (light theme): dark slate card, Dusk icon tiles */
+  const isMist = variant === "punch" && blackText;
+
+  const blendCardCls =
+    "rounded-3xl border-white/15 bg-slate-700/80 shadow-[0_16px_40px_-22px_rgba(15,23,42,0.45)] hover:-translate-y-1";
+  const blendStyle = {
+    backgroundImage: `linear-gradient(150deg, rgba(51,65,85,0.9) 0%, ${accent}33 130%)`,
+  };
+  const contentTitle = "text-slate-50";
+  const contentIconWrap = "border-white/15 bg-white/10";
+  const contentIconColor = accent;
+  const contentChip =
+    "border-white/15 bg-white/10 text-slate-200 hover:border-white/30 hover:bg-white/15";
+
+  const neonBand = variant === "neon";
+
+  const cardCls = cn(
+    "group relative overflow-hidden rounded-2xl border p-5 transition-all duration-500",
+    variant === "dark" &&
+      "bg-slate-800 border-slate-700 shadow-[0_20px_48px_-20px_rgba(15,23,42,0.5)] hover:-translate-y-1 hover:shadow-[0_28px_60px_-20px_rgba(15,23,42,0.6)]",
+    variant === "neon" &&
+      "bg-white border-slate-200/70 p-0 shadow-[0_10px_30px_-16px_rgba(15,23,42,0.22)] hover:-translate-y-1 hover:shadow-[0_24px_48px_-16px_rgba(15,23,42,0.3)]",
+    variant === "cloud" && "rounded-3xl border-transparent p-0",
+    variant === "outline" &&
+      "border-2 bg-white/30 shadow-none hover:-translate-y-1 hover:bg-white/60 hover:shadow-[0_20px_44px_-20px_rgba(15,23,42,0.25)]",
+    variant === "sherbet" &&
+      "rounded-3xl border-transparent hover:-translate-y-1 hover:shadow-[0_24px_48px_-22px_rgba(15,23,42,0.32)]",
+    variant === "punch" &&
+      "border-transparent shadow-[0_16px_40px_-18px_rgba(15,23,42,0.4)] hover:-translate-y-1 hover:shadow-[0_26px_56px_-18px_rgba(15,23,42,0.5)]",
+    isMist && blendCardCls,
+    variant === "soft" &&
+      "rounded-3xl border-transparent hover:-translate-y-1 hover:shadow-[0_24px_48px_-22px_rgba(15,23,42,0.35)]",
+    variant === "solidtint" &&
+      "border-black/10 hover:-translate-y-1 hover:shadow-[0_20px_44px_-16px_rgba(15,23,42,0.18)]",
+    visible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0",
+  );
+
+  const extraStyle =
+    variant === "outline"
+      ? { borderColor: `${accent}b3` }
+      : variant === "sherbet"
+        ? {
+            backgroundImage: `linear-gradient(160deg, ${accent}2b 0%, rgba(255,255,255,0.95) 62%)`,
+            boxShadow: `0 14px 36px -20px ${accent}aa`,
+          }
+        : variant === "punch"
+          ? isMist
+            ? blendStyle
+            : {
+                backgroundImage: `linear-gradient(140deg, ${accent} 0%, #0f172a 150%)`,
+                boxShadow: `0 18px 44px -20px ${accent}`,
+              }
+          : variant === "soft"
+            ? {
+                backgroundImage: `linear-gradient(140deg, ${accent}3d 0%, rgba(255,255,255,0.96) 52%, ${accent}24 100%)`,
+                boxShadow: `0 16px 40px -22px ${accent}cc`,
+              }
+            : variant === "solidtint"
+              ? { backgroundColor: `${accent}1a` }
+              : undefined;
+
+  const iconWrapCls = cn(
+    "mb-3 flex h-11 w-11 items-center justify-center rounded-xl border transition-all duration-300 group-hover:scale-105",
+    variant === "dark" && "border-white/15 bg-white/10",
+    variant === "punch" && (isMist ? contentIconWrap : "border-white/30 bg-white/15"),
+    variant === "cloud" && "border-slate-200/60 bg-white/0",
+    variant === "outline" && "border-2 bg-transparent",
+    variant === "sherbet" && "border-white/60 bg-white/70",
+    variant === "soft" && "border-white/80 bg-white/70",
+    variant === "solidtint" && "border-black/10 bg-white/70",
+  );
+
+  const iconStyle =
+    variant === "neon"
+      ? { color: "#fff" }
+      : variant === "punch"
+        ? isMist
+          ? { color: contentIconColor }
+          : { color: "#fff" }
+        : { color: accent };
+
+  const titleCls = cn(
+    "font-display text-lg font-semibold",
+    variant === "dark" && "text-slate-50",
+    variant === "punch" && (isMist ? contentTitle : "text-white"),
+  );
+
+  const chipCls = cn(
+    "rounded-full border px-3 py-1 text-xs text-muted-foreground transition-colors duration-300",
+    variant === "dark" && "border-white/10 bg-white/5 text-slate-300 group-hover:border-teal-300/40 group-hover:text-white",
+    variant === "punch" && (isMist ? contentChip : "border-white/25 bg-white/15 text-white/90"),
+    variant === "cloud" && "border-slate-200/70 bg-white/70 group-hover:border-primary/20 group-hover:text-foreground",
+    variant === "sherbet" && "border-white/70 bg-white/70 group-hover:text-foreground",
+    variant === "soft" && "border-white/80 bg-white/80 group-hover:border-primary/25 group-hover:text-foreground",
+    variant === "solidtint" && "border-black/10 bg-white/60 group-hover:border-primary/25 group-hover:text-foreground",
+    variant === "neon" && "bg-slate-50 group-hover:border-primary/20 group-hover:text-foreground",
+  );
+
+  const chipStyle =
+    variant === "neon"
+      ? { borderColor: `${accent}24` }
+      : variant === "outline"
+        ? { backgroundColor: `${accent}0f`, borderColor: `${accent}30` }
+        : undefined;
+
+  const list = (
+    <div className={"mt-3 flex flex-wrap gap-2"}>
+      {skill.items.map((item) => (
+        <span key={item} className={chipCls} style={chipStyle}>
+          {item}
+        </span>
+      ))}
+    </div>
+  );
+
   return (
     <div
-      className={cn(
-        "group relative overflow-hidden rounded-2xl border p-5",
-        "shadow-[0_2px_12px_rgba(15,23,42,0.06)] transition-all duration-500",
-        "hover:-translate-y-1 hover:shadow-[0_24px_48px_-14px_rgba(15,23,42,0.2)]",
-        visible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0",
-      )}
+      className={cardCls}
       style={{
         transitionDelay: visible ? `${index * 100}ms` : "0ms",
-        borderColor: `${skill.accent}2e`,
-        backgroundImage: cardBackground(skill.accent),
+        ...extraStyle,
       }}
     >
-      {/* Accent under-glow — lifts the card off the section */}
-      <div
-        className="pointer-events-none absolute -bottom-6 left-1/2 h-12 w-3/4 -translate-x-1/2 rounded-full opacity-30 blur-2xl transition-opacity duration-500 group-hover:opacity-70"
-        style={{ background: skill.accent }}
-      />
-      {/* Accent glow */}
-      <div
-        className="pointer-events-none absolute inset-0 opacity-50 transition-opacity duration-500 group-hover:opacity-100"
-        style={{ backgroundImage: `radial-gradient(circle at 85% 0%, ${skill.accent}1f, transparent 55%)` }}
-      />
-      {/* Top gradient bar */}
-      <div
-        className={cn(
-          "absolute left-0 right-0 top-0 h-0.5 bg-gradient-to-r opacity-0 transition-opacity duration-500 group-hover:opacity-100",
-          skill.color,
-        )}
-      />
-
-      <div className="relative">
+      {/* Ghost index number for airy variants */}
+      {(variant === "outline" || variant === "cloud") && (
+        <span className="pointer-events-none absolute -right-1 -top-5 font-display text-7xl font-bold opacity-10">
+          {index + 1}
+        </span>
+      )}
+      {/* Cloud accent rule */}
+      {variant === "cloud" && (
         <div
-          className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl border transition-colors duration-300 group-hover:scale-105"
-          style={{
-            backgroundColor: `${skill.accent}17`,
-            borderColor: `${skill.accent}30`,
-            color: skill.accent,
-          }}
-        >
-          <skill.icon className="h-5 w-5" />
+          className="mb-3 h-1 w-10 rounded-full"
+          style={{ backgroundColor: accent }}
+        />
+      )}
+
+      {neonBand ? (
+        <>
+          <div
+            className="flex items-center justify-between p-5"
+            style={{
+              backgroundImage: `linear-gradient(120deg, ${accent} 0%, #1e293b 135%)`,
+            }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 text-white">
+                <skill.icon className="h-5 w-5" />
+              </div>
+              <h3 className="font-display text-lg font-bold text-white">{skill.category}</h3>
+            </div>
+            <span className="font-mono text-xs text-white/70">0{index + 1}</span>
+          </div>
+          <div className="p-5">
+            <div className="flex flex-wrap gap-2">{list}</div>
+          </div>
+        </>
+      ) : (
+        <div className={cn("relative", variant === "cloud" && "mt-4")}>
+          <div className="flex items-center gap-3">
+            <div className={iconWrapCls} style={iconStyle}>
+              <skill.icon className="h-5 w-5" />
+            </div>
+            <h3 className={titleCls}>{skill.category}</h3>
+          </div>
+          {list}
         </div>
-        <h3 className="font-display text-lg font-semibold">{skill.category}</h3>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {skill.items.map((item) => (
-            <span
-              key={item}
-              className="rounded-full border px-3 py-1 text-xs text-muted-foreground transition-colors duration-300 group-hover:text-foreground"
-              style={{
-                backgroundColor: `${skill.accent}0f`,
-                borderColor: `${skill.accent}24`,
-              }}
-            >
-              {item}
-            </span>
-          ))}
-        </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -240,6 +358,10 @@ export function AboutSection() {
   const { ref: sectionRef, isVisible } = useScrollAnimation();
   const { ref: contentRef, isVisible: contentVisible } = useScrollAnimation();
   const { ref: skillsRef, isVisible: skillsVisible } = useScrollAnimation();
+
+  /* Skills grid — light: Mist (dark slate, Seafoam accents); dark: Dark slate cards */
+  const SEAFOAM_ACCENTS = ["#3BB3B1", "#E5F2DE", "#F29768", "#303E5E"];
+  const GRID4 = "grid gap-5 md:grid-cols-2 lg:grid-cols-4";
 
   /* Confirmed light-theme background: Slate, blending into experience below */
   const BG_SLATE =
@@ -333,12 +455,21 @@ export function AboutSection() {
     <div
       ref={skillsRef}
       className={cn(
-        "grid gap-5 transition-all duration-700 md:grid-cols-2 lg:grid-cols-4",
+        GRID4,
+        "transition-all duration-700",
         skillsVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0",
       )}
     >
       {skills.map((skill, i) => (
-        <SkillCard key={skill.category} skill={skill} index={i} visible={skillsVisible} />
+        <SkillCard
+          key={skill.category}
+          skill={skill}
+          index={i}
+          visible={skillsVisible}
+          variant={isLight ? "punch" : "dark"}
+          accentOverride={isLight ? SEAFOAM_ACCENTS[i] : undefined}
+          blackText={isLight}
+        />
       ))}
     </div>
   );
