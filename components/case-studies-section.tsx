@@ -1,5 +1,7 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { useTheme } from "next-themes";
 import { useScrollAnimation } from "@/hooks/use-scroll-animation";
 import { cn } from "@/lib/utils";
 import {
@@ -158,12 +160,39 @@ export function CaseStudiesSection({
   setExpandedStudy,
 }: CaseStudiesSectionProps) {
   const { ref: headerRef, isVisible: headerVisible } = useScrollAnimation();
+  const { resolvedTheme } = useTheme();
+  const [isLight, setIsLight] = useState(false);
+  useEffect(() => {
+    setIsLight(resolvedTheme === "light");
+  }, [resolvedTheme]);
+
+  /* Dark theme (locked): Parchment wash + Glass boxes */
+  const PARCHMENT_DARK =
+    "radial-gradient(circle at 50% 30%, rgba(120,90,50,0.18), transparent 60%), linear-gradient(180deg, rgba(30,22,14,0.55) 0%, rgba(10,8,5,0.8) 100%)";
+  const GLASS_DARK =
+    "border-white/10 bg-white/[0.06] shadow-[0_18px_50px_-20px_rgba(0,0,0,0.55)] backdrop-blur-md";
+
+  /* Light theme (locked): Dot Matrix wash + Tint boxes */
+  const DOTMATRIX_LIGHT =
+    "radial-gradient(rgba(15,23,42,0.10) 1px, transparent 1.5px), linear-gradient(180deg, hsl(0 0% 97%) 0%, #ffffff 60%)";
+  const DOTMATRIX_SIZE = "24px 24px, auto";
+  const TINT_LIGHT = "border-primary/15 bg-primary/[0.04]";
+
+  const washImage = isLight ? DOTMATRIX_LIGHT : PARCHMENT_DARK;
+  const washSize = isLight ? DOTMATRIX_SIZE : undefined;
+  const boxFace = isLight ? TINT_LIGHT : GLASS_DARK;
 
   return (
     <section id="case-studies" className="scene-case-study scene-block relative py-32">
       {/* Background accents */}
       <div className="pointer-events-none absolute left-1/2 top-0 h-px w-3/4 -translate-x-1/2 bg-gradient-to-r from-transparent via-border to-transparent" />
       <div className="pointer-events-none absolute right-0 top-1/3 h-96 w-96 rounded-full bg-primary/3 blur-3xl" />
+      {washImage && (
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{ backgroundImage: washImage, backgroundSize: washSize }}
+        />
+      )}
 
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         {/* Section header */}
@@ -176,7 +205,7 @@ export function CaseStudiesSection({
                 : "translate-y-4 opacity-0",
             )}
           >
-            03 / Case Studies
+            Case Studies
           </span>
           <h2
             className={cn(
@@ -210,6 +239,7 @@ export function CaseStudiesSection({
               study={study}
               index={i}
               isExpanded={expandedStudy === study.id}
+              face={boxFace}
               onToggle={() =>
                 setExpandedStudy(expandedStudy === study.id ? null : study.id)
               }
@@ -226,11 +256,13 @@ function CaseStudyCard({
   index,
   isExpanded,
   onToggle,
+  face,
 }: {
   study: CaseStudy;
   index: number;
   isExpanded: boolean;
   onToggle: () => void;
+  face?: string;
 }) {
   const { ref, isVisible } = useScrollAnimation();
 
@@ -239,6 +271,7 @@ function CaseStudyCard({
       ref={ref}
       className={cn(
         "group overflow-hidden rounded-2xl border border-border/50 transition-all duration-700",
+        face,
         isExpanded
           ? "border-primary/20 shadow-xl shadow-primary/5"
           : "hover:border-primary/10",
