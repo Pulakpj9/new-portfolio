@@ -6,10 +6,18 @@ export function ScrollProgress() {
   const [progress, setProgress] = useState(0)
 
   useEffect(() => {
-    const handleScroll = () => {
+    let ticking = false
+    const update = () => {
+      ticking = false
       const totalHeight = document.documentElement.scrollHeight - window.innerHeight
       const currentProgress = (window.scrollY / totalHeight) * 100
       setProgress(currentProgress)
+    }
+    const handleScroll = () => {
+      if (!ticking) {
+        ticking = true
+        requestAnimationFrame(update)
+      }
     }
 
     window.addEventListener("scroll", handleScroll, { passive: true })

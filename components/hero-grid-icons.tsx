@@ -168,14 +168,26 @@ export function HeroGridIcons() {
 
     let last = performance.now();
     let raf = 0;
+    let visible = true;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        visible = entry.isIntersecting;
+      },
+      { threshold: 0 },
+    );
+    io.observe(container);
     const step = (now: number) => {
       const dt = Math.min((now - last) / 1000, 0.05);
       last = now;
-      place(dt, now);
+      /* Skip all layout writes while the hero is off-screen. */
+      if (visible) place(dt, now);
       raf = requestAnimationFrame(step);
     };
     raf = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf);
+      io.disconnect();
+    };
   }, []);
 
   const handleNavigate = (href: string) => {
@@ -200,7 +212,7 @@ export function HeroGridIcons() {
           aria-label={def.label}
           className={cn(
             "group pointer-events-auto absolute left-0 top-0 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full",
-            "border border-border/50 bg-background/70 text-foreground/75 shadow-md backdrop-blur-sm",
+            "border border-border/50 bg-background/85 text-foreground/75 shadow-md",
             "before:absolute before:-inset-2 before:rounded-full before:content-['']",
             "transition-colors duration-300 hover:border-primary/40 hover:bg-primary/10 hover:text-primary",
           )}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { Navigation } from "@/components/navigation";
 import { HeroSection } from "@/components/hero-section";
 import { AboutSection } from "@/components/about-section";
@@ -12,7 +13,12 @@ import { ContactSection } from "@/components/contact-section";
 import { Footer } from "@/components/footer";
 import { CursorFollower } from "@/components/cursor-follower";
 import { ScrollProgress } from "@/components/scroll-progress";
-import { ChatAssistant } from "@/components/chat-assistant";
+
+/* Below-the-fold interactive widget — split out of the initial bundle. */
+const ChatAssistant = dynamic(
+  () => import("@/components/chat-assistant").then((m) => m.ChatAssistant),
+  { ssr: false },
+);
 
 export default function Page() {
   const [expandedStudy, setExpandedStudy] = useState<string | null>(null);

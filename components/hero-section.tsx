@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useTheme } from "next-themes";
-import { useParallax, useMousePosition } from "@/hooks/use-scroll-animation";
 import { MagneticButton } from "@/components/magnetic-button";
 import { HeroGridIcons } from "@/components/hero-grid-icons";
 import { ArrowDown, ArrowUpRight, Briefcase, Building2, Github, Linkedin } from "lucide-react";
@@ -87,13 +86,53 @@ function getCardTransform(index: number, active: number) {
 }
 
 export function HeroSection() {
-  const scrollY = useParallax();
-  const { x, y } = useMousePosition();
   const [loaded, setLoaded] = useState(false);
   const [activeCard, setActiveCard] = useState(1);
   const [cardsPaused, setCardsPaused] = useState(false);
   const [phase, setPhase] = useState(0);
   const firstRotation = useRef(true);
+  const bgRef = useRef<HTMLDivElement>(null);
+  const orb1Ref = useRef<HTMLDivElement>(null);
+  const orb2Ref = useRef<HTMLDivElement>(null);
+
+  /* Parallax + mouse orbs write straight to the DOM (rAF-throttled) so mouse
+     moves and scroll ticks never re-render the hero tree. */
+  useEffect(() => {
+    let ticking = false;
+    let mx = 0;
+    let my = 0;
+    const apply = () => {
+      ticking = false;
+      if (bgRef.current) {
+        bgRef.current.style.transform = `translate3d(0, ${window.scrollY * 0.4}px, 0)`;
+      }
+      if (orb1Ref.current) {
+        orb1Ref.current.style.transform = `translate3d(${mx * 0.02 - 200}px, ${my * 0.02 - 200}px, 0)`;
+      }
+      if (orb2Ref.current) {
+        orb2Ref.current.style.transform = `translate3d(${-mx * 0.015}px, ${my * 0.015 - 100}px, 0)`;
+      }
+    };
+    const request = () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(apply);
+      }
+    };
+    const onScroll = () => request();
+    const onMove = (e: PointerEvent) => {
+      mx = e.clientX;
+      my = e.clientY;
+      request();
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("pointermove", onMove, { passive: true });
+    apply();
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("pointermove", onMove);
+    };
+  }, []);
   const { resolvedTheme } = useTheme();
   /* Gate on mount: SSR renders with isLight=false so server and first client
      paint agree (no hydration mismatch); we correct to the real theme after
@@ -128,8 +167,6 @@ export function HeroSection() {
     return () => clearInterval(id);
   }, [cardsPaused]);
 
-  const parallaxOffset = scrollY * 0.4;
-
   const handleCardClick = useCallback((index: number) => {
     setActiveCard(index);
   }, []);
@@ -143,28 +180,25 @@ export function HeroSection() {
   return (
     <section className="scene-hero scene-block relative flex min-h-screen items-center overflow-hidden">
       {/* Background parallax */}
-      <div
-        className="absolute inset-0 z-0"
-        style={{ transform: `translateY(${parallaxOffset}px)` }}
-      >
+      <div ref={bgRef} className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/40 to-background" />
       </div>
 
       {/* Interactive gradient orbs */}
       <div
-        className="pointer-events-none absolute z-10 h-96 w-96 rounded-full opacity-20 blur-3xl transition-transform duration-700"
+        ref={orb1Ref}
+        className="pointer-events-none absolute z-10 h-96 w-96 rounded-full opacity-20 transition-transform duration-700"
         style={{
           background:
             "radial-gradient(circle, hsl(var(--primary)), transparent 70%)",
-          transform: `translate(${x * 0.02 - 200}px, ${y * 0.02 - 200}px)`,
         }}
       />
       <div
-        className="pointer-events-none absolute right-0 top-1/4 z-10 h-72 w-72 rounded-full opacity-15 blur-3xl transition-transform duration-1000"
+        ref={orb2Ref}
+        className="pointer-events-none absolute right-0 top-1/4 z-10 h-72 w-72 rounded-full opacity-15 transition-transform duration-1000"
         style={{
           background:
             "radial-gradient(circle, hsl(var(--gradient-secondary)), transparent 70%)",
-          transform: `translate(${-x * 0.015}px, ${y * 0.015 - 100}px)`,
         }}
       />
 

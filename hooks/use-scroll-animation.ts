@@ -43,33 +43,3 @@ export function useScrollAnimation({
 
   return { ref: setRef, isVisible }
 }
-
-export function useParallax() {
-  const [scrollY, setScrollY] = useState(0)
-
-  const handleScroll = useCallback(() => {
-    setScrollY(window.scrollY)
-  }, [])
-
-  useEffect(() => {
-    window.addEventListener("scroll", handleScroll, { passive: true })
-    return () => window.removeEventListener("scroll", handleScroll)
-  }, [handleScroll])
-
-  return scrollY
-}
-
-export function useMousePosition() {
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePosition({ x: e.clientX, y: e.clientY })
-    }
-
-    window.addEventListener("mousemove", handleMouseMove, { passive: true })
-    return () => window.removeEventListener("mousemove", handleMouseMove)
-  }, [])
-
-  return mousePosition
-}

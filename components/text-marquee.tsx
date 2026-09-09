@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 
 interface TextMarqueeProps {
@@ -11,9 +12,22 @@ interface TextMarqueeProps {
 
 export function TextMarquee({ items, className, speed = 30, blend }: TextMarqueeProps) {
   const duplicatedItems = [...items, ...items]
+  const ref = useRef<HTMLDivElement>(null)
+  const [paused, setPaused] = useState(false)
+
+  /* Freeze the infinite animation while off-screen. */
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const io = new IntersectionObserver(([entry]) => setPaused(!entry.isIntersecting), {
+      threshold: 0,
+    })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
 
   return (
-    <div className={cn("scene-marquee scene-block relative overflow-hidden py-12", blend && "scene-marquee-blend", className)}>
+    <div ref={ref} className={cn("scene-marquee scene-block relative overflow-hidden py-12", blend && "scene-marquee-blend", className)}>
       {/* Fade edges */}
       {!blend && (
         <>
@@ -26,6 +40,7 @@ export function TextMarquee({ items, className, speed = 30, blend }: TextMarquee
         className="flex animate-scroll gap-8 whitespace-nowrap"
         style={{
           animationDuration: `${speed}s`,
+          animationPlayState: paused ? "paused" : "running",
         }}
       >
         {duplicatedItems.map((item, i) => (

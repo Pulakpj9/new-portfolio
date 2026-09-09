@@ -4,7 +4,7 @@ import { useScrollAnimation } from "@/hooks/use-scroll-animation";
 import { cn } from "@/lib/utils";
 import { ArrowUpRight, ExternalLink, Github } from "lucide-react";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 const projects = [
   {
@@ -85,7 +85,10 @@ export function ProjectsSection({
       id="projects"
       className="scene-projects scene-block relative py-32"
     >
-      <div className="pointer-events-none absolute right-0 top-1/4 h-96 w-96 rounded-full bg-primary/3 blur-3xl" />
+      <div
+        className="pointer-events-none absolute right-0 top-1/4 h-96 w-96"
+        style={{ background: "radial-gradient(circle, hsl(var(--primary) / 0.05) 0%, transparent 70%)" }}
+      />
 
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div ref={headerRef} className="mb-20">
@@ -133,6 +136,43 @@ interface ProjectCardProps {
   onViewCaseStudy: (id: string) => void;
 }
 
+/* Video plays only while visible in the viewport; metadata-only preload keeps
+   ~100MB of video off the initial page load. */
+function ProjectVideo({ src, className }: { src: string; className?: string }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          el.play().catch(() => {});
+        } else {
+          el.pause();
+        }
+      },
+      { threshold: 0.25 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  return (
+    <video
+      ref={videoRef}
+      src={src}
+      muted
+      loop
+      playsInline
+      preload="metadata"
+      width={800}
+      height={500}
+      className={className}
+    />
+  );
+}
+
 function ProjectCard({ project, index, onViewCaseStudy }: ProjectCardProps) {
   const { ref, isVisible } = useScrollAnimation({ threshold: 0.15 });
   const [isHovered, setIsHovered] = useState(false);
@@ -175,15 +215,8 @@ function ProjectCard({ project, index, onViewCaseStudy }: ProjectCardProps) {
           </div>
 
           {project.video ? (
-            <video
+            <ProjectVideo
               src={project.video}
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="auto"
-              width={800}
-              height={500}
               className={cn(
                 "w-full transition-transform duration-700",
                 isHovered ? "scale-105" : "scale-100",
@@ -205,12 +238,12 @@ function ProjectCard({ project, index, onViewCaseStudy }: ProjectCardProps) {
 
         <div
           className={cn(
-            "absolute -z-10 h-32 w-32 rounded-full blur-3xl transition-all duration-700",
+            "absolute -z-10 h-32 w-32 transition-all duration-700",
             isEven ? "-bottom-8 -right-8" : "-bottom-8 -left-8",
             isHovered ? "opacity-30" : "opacity-0",
           )}
           style={{
-            background: `linear-gradient(135deg, hsl(var(--primary)), hsl(var(--gradient-secondary)))`,
+            background: `radial-gradient(circle, hsl(var(--primary)) 0%, hsl(var(--gradient-secondary) / 0.6) 45%, transparent 70%)`,
           }}
         />
       </div>

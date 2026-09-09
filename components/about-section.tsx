@@ -486,7 +486,10 @@ export function AboutSection() {
         <div className="scene-about-bg pointer-events-none absolute inset-0" />
       )}
       {/* Section background accent */}
-      <div className="pointer-events-none absolute left-0 top-1/3 h-96 w-96 rounded-full bg-primary/5 blur-3xl" />
+      <div
+        className="pointer-events-none absolute left-0 top-1/3 h-96 w-96"
+        style={{ background: "radial-gradient(circle, hsl(var(--primary) / 0.07) 0%, transparent 70%)" }}
+      />
 
       <div className="relative z-10 mx-auto max-w-7xl px-6 lg:px-8">
         <div className="flex flex-col">

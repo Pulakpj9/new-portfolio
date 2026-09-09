@@ -1,60 +1,73 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useMousePosition } from "@/hooks/use-scroll-animation"
+import { useEffect, useRef } from "react"
 
+/* Zero-React-state cursor ring: a single rAF loop mutates DOM refs directly
+   (no re-renders on mousemove), hover detection uses mouseover delegation
+   (no elementFromPoint/getComputedStyle polling), and no mix-blend-mode
+   (no full-page repaints under the cursor). */
 export function CursorFollower() {
-  const { x, y } = useMousePosition()
-  const [isVisible, setIsVisible] = useState(false)
-  const [isPointer, setIsPointer] = useState(false)
+  const ringRef = useRef<HTMLDivElement>(null)
+  const dotRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    // Only show on non-touch devices
-    const hasPointer = window.matchMedia("(pointer: fine)").matches
-    if (!hasPointer) return
+    if (!window.matchMedia("(pointer: fine)").matches) return
+    const ring = ringRef.current
+    const dot = dotRef.current
+    if (!ring || !dot) return
 
-    setIsVisible(true)
+    let x = -100
+    let y = -100
+    let rx = -100
+    let ry = -100
+    let scale = 1
+    let shown = false
+    let raf = 0
 
-    const handlePointerChange = () => {
-      const hoveredEl = document.elementFromPoint(x, y)
-      if (!hoveredEl) return
-      const computed = window.getComputedStyle(hoveredEl)
-      setIsPointer(
-        computed.cursor === "pointer" ||
-          hoveredEl.tagName === "A" ||
-          hoveredEl.tagName === "BUTTON" ||
-          hoveredEl.closest("a") !== null ||
-          hoveredEl.closest("button") !== null
-      )
+    const onMove = (e: PointerEvent) => {
+      x = e.clientX
+      y = e.clientY
+      if (!shown) {
+        shown = true
+        ring.style.opacity = "1"
+        dot.style.opacity = "1"
+      }
     }
 
-    const interval = setInterval(handlePointerChange, 100)
-    return () => clearInterval(interval)
-  }, [x, y])
+    const onOver = (e: MouseEvent) => {
+      const t = e.target as HTMLElement | null
+      scale = t?.closest?.("a, button, [role='button']") ? 1.6 : 1
+    }
 
-  if (!isVisible) return null
+    const loop = () => {
+      rx += (x - rx) * 0.22
+      ry += (y - ry) * 0.22
+      ring.style.transform = `translate3d(${rx}px, ${ry}px, 0) translate(-50%, -50%) scale(${scale})`
+      dot.style.transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%)`
+      raf = requestAnimationFrame(loop)
+    }
+
+    raf = requestAnimationFrame(loop)
+    window.addEventListener("pointermove", onMove, { passive: true })
+    document.addEventListener("mouseover", onOver, { passive: true })
+    return () => {
+      cancelAnimationFrame(raf)
+      window.removeEventListener("pointermove", onMove)
+      document.removeEventListener("mouseover", onOver)
+    }
+  }, [])
 
   return (
     <>
       {/* Outer ring */}
       <div
-        className="pointer-events-none fixed left-0 top-0 z-[9999] hidden rounded-full border border-primary/30 mix-blend-difference md:block"
-        style={{
-          width: isPointer ? 48 : 32,
-          height: isPointer ? 48 : 32,
-          transform: `translate(${x - (isPointer ? 24 : 16)}px, ${y - (isPointer ? 24 : 16)}px)`,
-          transition: "width 0.3s, height 0.3s, transform 0.15s ease-out",
-        }}
+        ref={ringRef}
+        className="pointer-events-none fixed left-0 top-0 z-[9999] hidden h-8 w-8 rounded-full border border-primary/40 opacity-0 transition-opacity duration-300 md:block"
       />
       {/* Inner dot */}
       <div
-        className="pointer-events-none fixed left-0 top-0 z-[9999] hidden rounded-full bg-primary md:block"
-        style={{
-          width: isPointer ? 8 : 4,
-          height: isPointer ? 8 : 4,
-          transform: `translate(${x - (isPointer ? 4 : 2)}px, ${y - (isPointer ? 4 : 2)}px)`,
-          transition: "width 0.3s, height 0.3s, transform 0.08s ease-out",
-        }}
+        ref={dotRef}
+        className="pointer-events-none fixed left-0 top-0 z-[9999] hidden h-1 w-1 rounded-full bg-primary opacity-0 transition-opacity duration-300 md:block"
       />
     </>
   )

@@ -96,7 +96,7 @@ export function ChatAssistant() {
       {/* First-visit label */}
       <div
         className={cn(
-          "pointer-events-auto relative max-w-[260px] rounded-2xl border border-border bg-card/90 p-3.5 pr-8 text-sm leading-relaxed text-card-foreground shadow-lg backdrop-blur transition-all duration-500",
+          "pointer-events-auto relative max-w-[260px] rounded-2xl border border-border bg-card p-3.5 pr-8 text-sm leading-relaxed text-card-foreground shadow-lg transition-all duration-500",
           mounted && showBanner
             ? "translate-y-0 opacity-100"
             : "pointer-events-none translate-y-3 opacity-0",

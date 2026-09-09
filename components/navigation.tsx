@@ -22,17 +22,41 @@ export function Navigation() {
   const [navVariant, setNavVariant] = useState<"light" | "dark">("light")
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50)
+    // Queried once — the section list is static, so never re-scan the DOM per scroll
+    const sections = Array.from(
+      document.querySelectorAll<HTMLElement>("section[id], footer")
+    )
+    let ticking = false
+    let lastScrolled: boolean | null = null
+    let lastVariant: "light" | "dark" = "light"
+
+    const update = () => {
+      ticking = false
+      const scrolled = window.scrollY > 50
+      if (scrolled !== lastScrolled) {
+        lastScrolled = scrolled
+        setIsScrolled(scrolled)
+      }
 
       const navHeight = 80
-      const els = document.querySelectorAll<HTMLElement>("section[id], footer")
-      for (const el of els) {
+      for (const el of sections) {
         const rect = el.getBoundingClientRect()
         if (rect.top <= navHeight && rect.bottom > navHeight) {
-          setNavVariant(DARK_SECTIONS.has(el.id) ? "dark" : "light")
+          const v = DARK_SECTIONS.has(el.id) ? "dark" : "light"
+          if (v !== lastVariant) {
+            lastVariant = v
+            setNavVariant(v)
+          }
           break
         }
+      }
+    }
+
+    // At most one layout read per animation frame; zero setStates unless values changed
+    const handleScroll = () => {
+      if (!ticking) {
+        ticking = true
+        requestAnimationFrame(update)
       }
     }
 
@@ -67,9 +91,9 @@ export function Navigation() {
         className={cn(
           "fixed top-0 left-0 right-0 z-50 transition-all duration-500",
           navVariant === "dark"
-            ? "scene-nav-dark glass py-3"
+            ? "scene-nav-dark border-b border-white/10 bg-[hsl(var(--glass-bg)/0.95)] py-3 shadow-lg"
             : isScrolled
-              ? "scene-nav-light glass py-3"
+              ? "scene-nav-light border-b border-black/10 bg-[hsl(var(--glass-bg)/0.95)] py-3 shadow-md"
               : "scene-nav-light bg-transparent py-6"
         )}
       >
