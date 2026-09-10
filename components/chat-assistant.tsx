@@ -224,7 +224,7 @@ export function ChatAssistant() {
         aria-expanded={open}
         className="group relative flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/30"
       >
-        <Bot className="h-7 w-7 transition-transform duration-300 group-hover:rotate-12" />
+        <span className="text-2xl leading-none transition-transform duration-300 group-hover:scale-110">🤖</span>
         {!open && (
           <span className="absolute right-0 top-0 flex h-3.5 w-3.5">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />

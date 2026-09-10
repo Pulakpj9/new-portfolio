@@ -70,7 +70,7 @@ export default function Page() {
       />
 
       <ContactSection />
-      <Footer />
+      {/* <Footer /> */}
       <ChatAssistant />
     </main>
   );
