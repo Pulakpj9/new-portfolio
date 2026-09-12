@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Bot, Send, Sparkles, X } from "lucide-react";
+import { Send, Sparkles, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Message {
@@ -43,7 +43,7 @@ export function ChatAssistant() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "bot",
-      text: "Hey! I'm Pulak's assistant 🤖 Ask me anything about him — skills, experience, projects, how to get in touch...",
+      text: "Hey! I'm Pulak Mini 🤖 Ask me anything about him — skills, experience, projects, how to get in touch...",
     },
   ]);
   const [input, setInput] = useState("");
@@ -126,13 +126,13 @@ export function ChatAssistant() {
       >
         {/* Header */}
         <div className="flex items-center gap-3 border-b border-border bg-gradient-to-r from-primary/10 to-transparent px-4 py-3">
-          <div className="relative flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
-            <Bot className="h-5 w-5" />
+          <div className="relative flex h-10 w-10 items-center justify-center rounded-full bg-primary text-xl">
+            <span className="leading-none">🤖</span>
             <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card bg-emerald-500" />
           </div>
           <div className="flex-1">
             <p className="text-sm font-semibold text-foreground">
-              Pulak&apos;s Assistant
+              Pulak Mini
             </p>
             <p className="text-xs text-muted-foreground">Online · replies instantly</p>
           </div>
@@ -220,7 +220,7 @@ export function ChatAssistant() {
       {/* Launcher button */}
       <button
         onClick={handleToggle}
-        aria-label={open ? "Close assistant" : "Open assistant"}
+        aria-label={open ? "Close Pulak Mini" : "Open Pulak Mini"}
         aria-expanded={open}
         className="group relative flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/30"
       >
