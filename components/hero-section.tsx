@@ -5,6 +5,7 @@ import { useTheme } from "next-themes";
 import { MagneticButton } from "@/components/magnetic-button";
 import { HeroGridIcons } from "@/components/hero-grid-icons";
 import { ArrowDown, ArrowUpRight, Briefcase, Building2, Github, Linkedin } from "lucide-react";
+import { tracker } from "@/lib/analytics/tracker";
 import { cn } from "@/lib/utils";
 
 interface Card {
@@ -397,6 +398,11 @@ export function HeroSection() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="GitHub"
+                onClick={() =>
+                  tracker.track("social_click", {
+                    meta: { network: "github", placement: "hero" },
+                  })
+                }
                 className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-border text-foreground transition-colors duration-300 hover:border-primary/50 hover:bg-primary/10 hover:text-primary"
               >
                 <Github className="h-5 w-5" />
@@ -406,6 +412,11 @@ export function HeroSection() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="LinkedIn"
+                onClick={() =>
+                  tracker.track("social_click", {
+                    meta: { network: "linkedin", placement: "hero" },
+                  })
+                }
                 className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-border text-foreground transition-colors duration-300 hover:border-primary/50 hover:bg-primary/10 hover:text-primary"
               >
                 <Linkedin className="h-5 w-5" />

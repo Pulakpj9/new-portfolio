@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { useScrollAnimation } from "@/hooks/use-scroll-animation";
 import { cn } from "@/lib/utils";
+import { tracker } from "@/lib/analytics/tracker";
 import {
   ChevronDown,
   Target,
@@ -272,6 +273,7 @@ function CaseStudyCard({
   return (
     <div
       ref={ref}
+      data-content={`case-study:${study.id}`}
       className={cn(
         "group overflow-hidden rounded-2xl border border-border/50 transition-all duration-700",
         face,
@@ -283,8 +285,16 @@ function CaseStudyCard({
       style={{ transitionDelay: isVisible ? `${index * 100}ms` : "0ms" }}
     >
       {/* Header (always visible) */}
-      <button
-        onClick={onToggle}
+        <button
+          onClick={() => {
+            if (!isExpanded) {
+              tracker.track("cta_click", {
+                content_slug: study.id,
+                meta: { target: "expand-case-study", kind: "case-study" },
+              });
+            }
+            onToggle();
+          }}
         className="flex w-full items-center gap-6 p-6 text-left transition-colors duration-300 hover:bg-secondary/20 lg:p-8"
         aria-expanded={isExpanded}
       >

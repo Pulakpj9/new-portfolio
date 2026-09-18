@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Send, Sparkles, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { tracker } from "@/lib/analytics/tracker";
 
 interface Message {
   role: "user" | "bot";
@@ -76,6 +77,7 @@ export function ChatAssistant() {
 
   const handleToggle = () => {
     dismissBanner();
+    if (!open) tracker.track("chat_open");
     setOpen((o) => !o);
   };
 
