@@ -2,6 +2,7 @@
 
 import { useScrollAnimation } from "@/hooks/use-scroll-animation";
 import { cn } from "@/lib/utils";
+import { tracker } from "@/lib/analytics/tracker";
 import { ArrowUpRight, ExternalLink, Github } from "lucide-react";
 import Image from "next/image";
 import { useState, useRef, useEffect } from "react";
@@ -138,8 +139,17 @@ interface ProjectCardProps {
 
 /* Video plays only while visible in the viewport; metadata-only preload keeps
    ~100MB of video off the initial page load. */
-function ProjectVideo({ src, className }: { src: string; className?: string }) {
+function ProjectVideo({
+  id,
+  src,
+  className,
+}: {
+  id: string;
+  src: string;
+  className?: string;
+}) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const playedRef = useRef(false);
 
   useEffect(() => {
     const el = videoRef.current;
@@ -169,6 +179,14 @@ function ProjectVideo({ src, className }: { src: string; className?: string }) {
       width={800}
       height={500}
       className={className}
+      onPlay={() => {
+        if (playedRef.current) return;
+        playedRef.current = true;
+        tracker.track("video_play", {
+          content_slug: id,
+          meta: { kind: "project" },
+        });
+      }}
     />
   );
 }
@@ -181,6 +199,7 @@ function ProjectCard({ project, index, onViewCaseStudy }: ProjectCardProps) {
   return (
     <div
       ref={ref}
+      data-content={`project:${project.id}`}
       className={cn(
         "group grid gap-8 lg:grid-cols-2 lg:gap-16 items-center transition-all duration-1000",
         isVisible ? "translate-y-0 opacity-100" : "translate-y-16 opacity-0",
@@ -206,7 +225,13 @@ function ProjectCard({ project, index, onViewCaseStudy }: ProjectCardProps) {
             )}
           >
             <button
-              onClick={() => onViewCaseStudy(project.id)}
+              onClick={() => {
+                tracker.track("cta_click", {
+                  content_slug: project.id,
+                  meta: { target: "view-case-study", kind: "project" },
+                });
+                onViewCaseStudy(project.id);
+              }}
               className="flex items-center gap-2 rounded-full border border-foreground/20 bg-background/60 px-6 py-3 text-sm font-medium text-foreground backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:border-primary/40 hover:bg-background/80"
             >
               View Case Study
@@ -216,6 +241,7 @@ function ProjectCard({ project, index, onViewCaseStudy }: ProjectCardProps) {
 
           {project.video ? (
             <ProjectVideo
+              id={project.id}
               src={project.video}
               className={cn(
                 "w-full transition-transform duration-700",

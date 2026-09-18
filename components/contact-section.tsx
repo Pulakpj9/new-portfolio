@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useTheme } from "next-themes"
 import { useScrollAnimation } from "@/hooks/use-scroll-animation"
 import { MagneticButton } from "@/components/magnetic-button"
+import { tracker } from "@/lib/analytics/tracker"
 import { cn } from "@/lib/utils"
 import { Mail, MapPin, ArrowUpRight, Github, Linkedin, Twitter } from "lucide-react"
 
@@ -126,6 +127,9 @@ export function ContactSection() {
             >
               <MagneticButton
                 href="mailto:pulakpj9@gmail.com"
+                onClick={() =>
+                  tracker.track("cta_click", { meta: { target: "email" } })
+                }
                 className="bg-primary text-primary-foreground hover:shadow-lg hover:shadow-primary/25"
               >
                 Say Hello
@@ -142,6 +146,14 @@ export function ContactSection() {
                 <a
                   key={link.label}
                   href={link.href}
+                  onClick={
+                    link.href.startsWith("mailto:")
+                      ? () =>
+                          tracker.track("cta_click", {
+                            meta: { target: "email" },
+                          })
+                      : undefined
+                  }
                   className={cn(
                     "group relative flex items-center gap-4 overflow-hidden rounded-2xl border border-border/50 p-6 transition-all duration-500 hover:translate-x-1.5 hover:border-primary/20 hover:bg-secondary/30 hover:shadow-lg hover:shadow-primary/5",
                     INK.face,
@@ -207,6 +219,11 @@ export function ContactSection() {
                     key={social.label}
                     href={social.href}
                     aria-label={social.label}
+                    onClick={() =>
+                      tracker.track("social_click", {
+                        meta: { network: social.label.toLowerCase() },
+                      })
+                    }
                     className={cn(
                       "group flex h-12 w-12 items-center justify-center rounded-full border border-border/50 text-muted-foreground transition-all duration-300 hover:border-primary/50 hover:bg-primary/10 hover:text-primary hover:shadow-lg hover:shadow-primary/10",
                       isLight && "border-slate-300/80 shadow-sm",
@@ -217,6 +234,12 @@ export function ContactSection() {
                   </a>
                 ))}
               </div>
+              <p className="mt-6 font-mono text-[11px] text-muted-foreground/70">
+                Anonymous analytics only —{" "}
+                <a href="/privacy" className="hover:text-primary hover:underline">
+                  how measuring works
+                </a>
+              </p>
             </div>
           </div>
         </div>

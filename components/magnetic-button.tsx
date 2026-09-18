@@ -55,6 +55,7 @@ export function MagneticButton({
         ref={ref as React.RefObject<HTMLAnchorElement>}
         href={href}
         className={props.className}
+        onClick={onClick}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
         style={style}
