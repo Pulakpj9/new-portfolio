@@ -1,0 +1,21 @@
+-- Phase 4: 13-month retention. Sessions cascade to events
+-- (events.session_id references sessions on delete cascade), so one
+-- statement enforces the whole policy.
+--
+-- A. Manual run (anytime, SQL Editor):
+--
+--   delete from sessions where started_at < now() - interval '13 months';
+--
+-- B. Scheduled monthly run via pg_cron (run once to install):
+--
+--   create extension if not exists pg_cron;
+--   select cron.schedule(
+--     'portfolio-retention',
+--     '0 3 1 * *',          -- 03:00 UTC on the 1st of each month
+--     $$delete from sessions where started_at < now() - interval '13 months'$$
+--   );
+--
+--   -- inspect:  select * from cron.job;
+--   -- remove:   select cron.unschedule('portfolio-retention');
+
+delete from sessions where started_at < now() - interval '13 months';

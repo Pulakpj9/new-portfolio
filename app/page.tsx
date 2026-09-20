@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { Navigation } from "@/components/navigation";
 import { HeroSection } from "@/components/hero-section";
@@ -17,6 +17,7 @@ import {
   AnalyticsProvider,
   TrackedSection,
 } from "@/lib/analytics/use-section-tracking";
+import { registerCaseStudyExpander } from "@/lib/chat/actions";
 
 /* Below-the-fold interactive widget — split out of the initial bundle. */
 const ChatAssistant = dynamic(
@@ -26,6 +27,12 @@ const ChatAssistant = dynamic(
 
 export default function Page() {
   const [expandedStudy, setExpandedStudy] = useState<string | null>(null);
+
+  /* Lets the chat bot open case studies (expand-only; never collapses). */
+  useEffect(() => {
+    registerCaseStudyExpander((id) => setExpandedStudy(id));
+    return () => registerCaseStudyExpander(null);
+  }, []);
 
   return (
     <AnalyticsProvider>
