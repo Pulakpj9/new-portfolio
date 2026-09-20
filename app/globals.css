@@ -509,3 +509,19 @@ html {
   --secondary-foreground: 210 40% 80%;
   --overlay: 222 47% 5%;
 }
+
+/* Bot highlight pulse (chat navigation). Removed automatically after ~2.5s. */
+.bot-highlight {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 4px;
+  border-radius: 1rem;
+  animation: bot-highlight-pulse 1.2s ease-in-out 2;
+}
+@keyframes bot-highlight-pulse {
+  0%, 100% { outline-color: hsl(var(--primary) / 0.9); }
+  50% { outline-color: hsl(var(--primary) / 0.25); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bot-highlight { animation: none; }
+}
+

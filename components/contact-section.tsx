@@ -6,28 +6,8 @@ import { useScrollAnimation } from "@/hooks/use-scroll-animation"
 import { MagneticButton } from "@/components/magnetic-button"
 import { tracker } from "@/lib/analytics/tracker"
 import { cn } from "@/lib/utils"
-import { Mail, MapPin, ArrowUpRight, Github, Linkedin, Twitter } from "lucide-react"
-
-const contactLinks = [
-  {
-    label: "Email",
-    value: "pulakpj9@gmail.com",
-    href: "mailto:pulakpj9@gmail.com",
-    icon: Mail,
-  },
-  {
-    label: "Location",
-    value: "Ahmedabad, Gujarat",
-    href: "#",
-    icon: MapPin,
-  },
-]
-
-const socialLinks = [
-  { label: "GitHub", href: "https://github.com/Pulakpj9", icon: Github },
-  { label: "LinkedIn", href: "https://www.linkedin.com/in/pulak-jain-aa1053203", icon: Linkedin },
-  // { label: "Twitter", href: "#", icon: Twitter },
-]
+import { ArrowUpRight } from "lucide-react"
+import { contactLinks, socialLinks } from "@/content/contact"
 
 export function ContactSection() {
   const { ref: headerRef, isVisible: headerVisible } = useScrollAnimation()

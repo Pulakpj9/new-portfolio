@@ -9,5 +9,7 @@ node_modules/
 .env*.local
 .DS_Store
 .env
+# Supabase CLI local state only — migrations, seeds, docs, and lib/supabase
+# client code MUST be committed or Vercel builds break (Linux clone
+# lacks whatever is ignored here, while Windows builds pass locally).
 docs
-supabase

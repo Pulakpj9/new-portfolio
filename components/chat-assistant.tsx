@@ -1,13 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Bot, Send, Sparkles, X } from "lucide-react";
+import { Send, Sparkles, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { tracker } from "@/lib/analytics/tracker";
+import { executeBotAction } from "@/lib/chat/actions";
+import type { BotStep, ChatDonePayload } from "@/lib/chat/protocol";
 
 interface Message {
   role: "user" | "bot";
   text: string;
+  pending?: boolean;
 }
 
 const QUICK_REPLIES = ["About Pulak", "Skills", "Projects", "Contact"];
@@ -15,42 +18,21 @@ const QUICK_REPLIES = ["About Pulak", "Skills", "Projects", "Contact"];
 const BANNER_TEXT =
   "Looking for work? Ask me anything about Pulak — I know him best! 🤖";
 
-function botReply(input: string): string {
-  const q = input.toLowerCase();
-  if (/(skill|stack|tech|language|tools?)/.test(q)) {
-    return "Pulak is a full-stack developer working with TypeScript, Next.js, React, Node.js, Express, MySQL, MongoDB, WebSockets, Docker and AWS. Backend is his playground!";
-  }
-  if (/(project|portfoli|built|work)/.test(q)) {
-    return "Head to the Projects section — he has selected work with detailed case studies covering design, architecture and tricky problems. It's worth a scroll!";
-  }
-  if (/(experien|career|jobs?|roles?)/.test(q)) {
-    return "Pulak is a backend-focused full-stack developer with hands-on experience in solution design and implementation. The Experience section has his full journey.";
-  }
-  if (/(contact|email|mail|reach|hire)/.test(q)) {
-    return "Easy — drop him a line at pulakpj9@gmail.com, or use the Contact section at the bottom. He usually replies fast!";
-  }
-  if (/(about|who|pulak)/.test(q)) {
-    return "Pulak Jain is a software developer who loves turning complex problems into clean, scalable products. He thinks like a backend engineer and ships like a product owner.";
-  }
-  if (/(hire|available|job|work)/.test(q)) {
-    return "Yes — Pulak is actively looking for work! Check the Contact section or email pulakpj9@gmail.com to get the ball rolling. 🚀";
-  }
-  return "Hmm, I'm still a demo-bot so I may not have that answer yet. Try asking about his skills, experience, projects, or contact details — or just scroll the page!";
-}
-
 export function ChatAssistant() {
   const [open, setOpen] = useState(false);
   const [showBanner, setShowBanner] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "bot",
-      text: "Hey! I'm Pulak's assistant 🤖 Ask me anything about him — skills, experience, projects, how to get in touch...",
+      text: "Hey! I'm Pulak Mini 🤖 Ask me anything about him — skills, experience, projects, how to get in touch...",
     },
   ]);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [followups, setFollowups] = useState<string[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const runId = useRef(0);
 
   useEffect(() => {
     setMounted(true);
@@ -69,7 +51,7 @@ export function ChatAssistant() {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, typing, open]);
+  }, [messages, typing, followups, open]);
 
   const dismissBanner = () => {
     setShowBanner(false);
@@ -81,16 +63,146 @@ export function ChatAssistant() {
     setOpen((o) => !o);
   };
 
-  const send = (text: string) => {
+  const send = async (text: string) => {
     const trimmed = text.trim();
     if (!trimmed || typing) return;
-    setMessages((m) => [...m, { role: "user", text: trimmed }]);
+    const run = ++runId.current;
+    const alive = () => runId.current === run;
+    const history = [...messages, { role: "user" as const, text: trimmed }].slice(-10);
+    setMessages([
+      ...messages,
+      { role: "user", text: trimmed },
+      { role: "bot", text: "", pending: true },
+    ]);
+    setFollowups([]);
     setInput("");
     setTyping(true);
-    setTimeout(() => {
-      setMessages((m) => [...m, { role: "bot", text: botReply(trimmed) }]);
-      setTyping(false);
-    }, 650);
+
+    const finishTyping = () => {
+      if (alive()) setTyping(false);
+    };
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: history.map((m) => ({ role: m.role, content: m.text })),
+        }),
+      });
+      if (!res.ok || !res.body) throw new Error(`http_${res.status}`);
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      let streamed = "";
+      let firstToken = false;
+      // Array (not a let binding): TS control-flow can't see closure
+      // assignments, so a plain `let` would narrow to its initializer.
+      const doneBox: ChatDonePayload[] = [];
+
+      const appendToken = (token: string) => {
+        if (!alive()) return;
+        streamed += token;
+        if (!firstToken) {
+          firstToken = true;
+          finishTyping();
+        }
+        const snapshot = streamed;
+        setMessages((m) => {
+          const copy = [...m];
+          const last = copy[copy.length - 1];
+          if (last && last.role === "bot" && last.pending) {
+            copy[copy.length - 1] = { ...last, text: snapshot };
+          }
+          return copy;
+        });
+      };
+
+      const handleLine = (line: string) => {
+        const t = line.trim();
+        if (!t.startsWith("data:")) return;
+        let json: { token?: string; done?: ChatDonePayload };
+        try {
+          json = JSON.parse(t.slice(5));
+        } catch {
+          return;
+        }
+        if (typeof json.token === "string") appendToken(json.token);
+        if (json.done) doneBox.push(json.done);
+      };
+
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split("\n");
+        buf = lines.pop() ?? "";
+        for (const line of lines) handleLine(line);
+        if (!alive()) {
+          try {
+            await reader.cancel();
+          } catch {
+            /* already closed */
+          }
+          break;
+        }
+      }
+      if (buf.trim()) handleLine(buf.trim());
+      if (!alive()) return;
+      finishTyping();
+      const donePayload = doneBox[doneBox.length - 1] ?? null;
+      if (!donePayload) throw new Error("no_done");
+
+      // Replace the pending bubble with staged steps.
+      const rawSteps: BotStep[] =
+        donePayload.steps.length > 0
+          ? donePayload.steps
+          : [{ text: streamed || "Hmm, that came back empty — try again?" }];
+      setMessages((m) => {
+        const copy = [...m];
+        const last = copy[copy.length - 1];
+        if (last && last.role === "bot" && last.pending) {
+          copy[copy.length - 1] = { role: "bot", text: rawSteps[0].text };
+        } else {
+          copy.push({ role: "bot", text: rawSteps[0].text });
+        }
+        return copy;
+      });
+      const firstAction = rawSteps[0].action;
+      if (firstAction) {
+        window.setTimeout(() => {
+          if (alive()) executeBotAction(firstAction);
+        }, 350);
+      }
+      for (let i = 1; i < rawSteps.length; i++) {
+        await new Promise((r) => setTimeout(r, 900));
+        if (!alive()) return;
+        const step = rawSteps[i];
+        setMessages((m) => [...m, { role: "bot", text: step.text }]);
+        if (step.action) {
+          await new Promise((r) => setTimeout(r, 350));
+          if (!alive()) return;
+          executeBotAction(step.action);
+        }
+      }
+      if (alive()) setFollowups(donePayload.followups ?? []);
+    } catch {
+      if (!alive()) return;
+      finishTyping();
+      const offline =
+        "I'm offline right now — try the links above, or email pulakpj9@gmail.com and he'll reply fast.";
+      setMessages((m) => {
+        const copy = [...m];
+        const last = copy[copy.length - 1];
+        if (last && last.role === "bot" && last.pending) {
+          copy[copy.length - 1] = { role: "bot", text: offline };
+        } else {
+          copy.push({ role: "bot", text: offline });
+        }
+        return copy;
+      });
+    }
   };
 
   return (
@@ -128,13 +240,13 @@ export function ChatAssistant() {
       >
         {/* Header */}
         <div className="flex items-center gap-3 border-b border-border bg-gradient-to-r from-primary/10 to-transparent px-4 py-3">
-          <div className="relative flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
-            <Bot className="h-5 w-5" />
+          <div className="relative flex h-10 w-10 items-center justify-center rounded-full bg-primary text-xl">
+            <span className="leading-none">🤖</span>
             <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card bg-emerald-500" />
           </div>
           <div className="flex-1">
             <p className="text-sm font-semibold text-foreground">
-              Pulak&apos;s Assistant
+              Pulak Mini
             </p>
             <p className="text-xs text-muted-foreground">Online · replies instantly</p>
           </div>
@@ -178,20 +290,31 @@ export function ChatAssistant() {
           )}
         </div>
 
-        {/* Quick replies */}
-        {messages.length <= 1 && (
-          <div className="flex flex-wrap gap-2 px-4 pb-2">
-            {QUICK_REPLIES.map((q) => (
-              <button
-                key={q}
-                onClick={() => send(q)}
-                className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
-              >
-                {q}
-              </button>
-            ))}
-          </div>
-        )}
+        {/* Follow-up replies: server-suggested after each answer,
+            static quick replies at conversation start */}
+        {(() => {
+          const chips =
+            followups.length > 0
+              ? followups
+              : messages.length <= 1
+                ? QUICK_REPLIES
+                : [];
+          if (chips.length === 0) return null;
+          return (
+            <div className="flex flex-wrap gap-2 px-4 pb-2">
+              {chips.map((q) => (
+                <button
+                  key={q}
+                  onClick={() => void send(q)}
+                  disabled={typing}
+                  className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary disabled:opacity-50"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          );
+        })()}
 
         {/* Input */}
         <form
@@ -222,7 +345,7 @@ export function ChatAssistant() {
       {/* Launcher button */}
       <button
         onClick={handleToggle}
-        aria-label={open ? "Close assistant" : "Open assistant"}
+        aria-label={open ? "Close Pulak Mini" : "Open Pulak Mini"}
         aria-expanded={open}
         className="group relative flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/30"
       >
