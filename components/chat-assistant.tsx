@@ -87,7 +87,11 @@ export function ChatAssistant() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: history.map((m) => ({ role: m.role, content: m.text })),
+          // Server speaks OpenAI roles: our "bot" === "assistant".
+          messages: history.map((m) => ({
+            role: m.role === "bot" ? "assistant" : "user",
+            content: m.text,
+          })),
         }),
       });
       if (!res.ok || !res.body) throw new Error(`http_${res.status}`);
