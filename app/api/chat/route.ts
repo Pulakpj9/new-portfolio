@@ -8,6 +8,7 @@ import {
   splitSteps,
 } from "@/content/chat-kb";
 import { botReply, FALLBACK_FOLLOWUPS } from "@/lib/chat/fallback";
+import { estimateCostUsd } from "@/lib/chat/cost";
 import type { BotAction, BotStep, ChatDonePayload } from "@/lib/chat/protocol";
 import {
   providerConfig,
@@ -151,6 +152,8 @@ function logConversation(input: {
   question: string;
   intent: string;
   tools: string[];
+  usage?: { input: number; output: number };
+  latencyMs?: number;
 }): void {
   try {
     const sb = getServiceClient();
@@ -163,6 +166,9 @@ function logConversation(input: {
         question: stripEmail(input.question),
         intent: input.intent,
         tools_used: input.tools,
+        input_tokens: input.usage?.input ?? null,
+        output_tokens: input.usage?.output ?? null,
+        latency_ms: input.latencyMs ?? null,
       })
       .then(({ error }) => {
         if (error) console.error("[chat] conversation log failed:", error);
@@ -170,6 +176,103 @@ function logConversation(input: {
   } catch (err) {
     console.error("[chat] conversation log threw:", err);
   }
+}
+
+/* Abuse guards (Phase C). Kill-switch + per-session cap + monthly budget.
+   All fail-open except an explicit disable: a broken guard must not mute
+   the bot, but an explicit off must. */
+
+const SESSION_CHAT_CAP = 15;
+
+interface GuardCache {
+  at: number;
+  enabled: boolean;
+}
+let guardCache: GuardCache | null = null;
+const GUARD_TTL_MS = 60_000;
+
+async function botEnabled(): Promise<boolean> {
+  const now = Date.now();
+  if (guardCache && now - guardCache.at < GUARD_TTL_MS) {
+    return guardCache.enabled;
+  }
+  let enabled = true;
+  try {
+    const sb = getServiceClient();
+    if (sb) {
+      const { data } = await sb
+        .from("bot_settings")
+        .select("value")
+        .eq("key", "bot_enabled")
+        .single();
+      if (data) enabled = data.value === true;
+    }
+  } catch {
+    /* fail open */
+  }
+  guardCache = { at: now, enabled };
+  return enabled;
+}
+
+async function sessionChatCount(sessionId: string): Promise<number | null> {
+  try {
+    const sb = getServiceClient();
+    if (!sb) return null;
+    const { count, error } = await sb
+      .from("bot_conversations")
+      .select("id", { count: "exact", head: true })
+      .eq("session_id", sessionId);
+    if (error) throw error;
+    return count ?? 0;
+  } catch {
+    return null; // fail open
+  }
+}
+
+async function monthSpendUsd(): Promise<number | null> {
+  try {
+    const sb = getServiceClient();
+    if (!sb) return null;
+    const start = new Date();
+    start.setUTCDate(1);
+    start.setUTCHours(0, 0, 0, 0);
+    const { data, error } = await sb
+      .from("bot_conversations")
+      .select("input_tokens, output_tokens")
+      .gte("time", start.toISOString())
+      .limit(10000);
+    if (error) throw error;
+    return (data ?? []).reduce(
+      (sum, r) =>
+        sum + estimateCostUsd(r.input_tokens ?? 0, r.output_tokens ?? 0),
+      0,
+    );
+  } catch {
+    return null; // fail open
+  }
+}
+
+function cappedResponse(text: string): Response {
+  const payload: ChatDonePayload = {
+    steps: [{ text }],
+    followups: [...FALLBACK_FOLLOWUPS],
+    fallback: true,
+    fallback_reason: "capped",
+  };
+  const stream = new ReadableStream<string>({
+    start(controller) {
+      controller.enqueue(sseEncode({ done: payload }));
+      controller.close();
+    },
+  });
+  return new Response(stream, {
+    status: 200,
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+    },
+  });
 }
 
 export async function POST(req: Request) {
@@ -187,7 +290,40 @@ export async function POST(req: Request) {
   const { messages, session_id } = parsed.data;
   const lastUser =
     [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
+
+  // Explicit kill-switch wins over everything (503 → client offline note).
+  if (!(await botEnabled())) {
+    return NextResponse.json({ error: "bot_disabled" }, { status: 503 });
+  }
+
+  // Per-session cap: 15 chats per anonymous session, then a polite stop.
+  if (session_id) {
+    const count = await sessionChatCount(session_id);
+    if (count !== null && count >= SESSION_CHAT_CAP) {
+      return cappedResponse(
+        "Easy on the questions — you've hit the chat limit for this visit. Email pulakpj9@gmail.com and he'll pick it up directly.",
+      );
+    }
+  }
+
+  // Monthly budget cap (env, USD). Unset = uncapped.
+  const monthlyCap = Number(process.env.CHAT_MONTHLY_CAP_USD);
+  if (Number.isFinite(monthlyCap) && monthlyCap > 0) {
+    const spent = await monthSpendUsd();
+    if (spent !== null && spent >= monthlyCap) {
+      console.error(
+        `[chat] monthly budget reached: $${spent.toFixed(2)} >= $${monthlyCap}`,
+      );
+      return cappedResponse(
+        "Chat is paused for now — email pulakpj9@gmail.com and he'll reply directly.",
+      );
+    }
+  }
+
   const config = providerConfig();
+
+  // Generation clock: validation + caps excluded, LLM-or-fallback duration only.
+  const chatStart = Date.now();
 
   const stream = new ReadableStream<string>({
     async start(controller) {
@@ -244,6 +380,8 @@ export async function POST(req: Request) {
           question: lastUser,
           intent: intentFor(actions, result.text),
           tools: result.tools.map((t) => t.name),
+          usage: result.usage,
+          latencyMs: Date.now() - chatStart,
         });
         if (DEBUG) {
           console.log(

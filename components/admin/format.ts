@@ -21,6 +21,12 @@ export function formatPct(ratio: number | null | undefined): string {
   return `${(ratio * 100).toFixed(1)}%`;
 }
 
+export function formatUsd(n: number | null | undefined): string {
+  if (n == null || !Number.isFinite(n)) return "—";
+  if (n < 0.01) return "<$0.01";
+  return `$${n.toFixed(2)}`;
+}
+
 export function formatDay(day: string): string {
   const d = new Date(`${day}T00:00:00Z`);
   if (Number.isNaN(d.getTime())) return day;

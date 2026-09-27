@@ -29,6 +29,9 @@ const clientEventSchema = z
     if (e.type === "content_view" && !e.content_slug) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "content_slug required" });
     }
+    if (e.type === "chat_user_reply" && e.dwell_ms === undefined) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "dwell_ms required" });
+    }
   });
 
 const uuidSchema = z.string().uuid();

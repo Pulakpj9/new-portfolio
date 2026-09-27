@@ -24,6 +24,10 @@ const ROWS: Array<[string, string]> = [
     "Raw visit data is deleted after 13 months (sessions cascade to their events in a single monthly statement). There is nothing to export because nothing identifies you.",
   ],
   [
+    "Chat questions",
+    "Questions you ask Pulak Mini are stored without identity (emails stripped before storage) alongside the site's anonymous visit data, for the same 13 months — it shows which topics visitors care about. Answers are generated from the portfolio's own public content; nothing you type leaves the anonymous session it arrived in.",
+  ],
+  [
     "Your options",
     "Use an ad-blocker or Do Not Track to opt out completely — the site works identically either way. If you believe a record relates to you anyway, email and describe the visit; without identifiers there is nothing to look up, and that limitation is deliberate.",
   ],

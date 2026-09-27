@@ -188,10 +188,17 @@ export function TrackedSection({
 
 /** Mount once near the root. Idempotent init; DNT/disabled-flag aware.
  *  Also observes [data-content="kind:slug"] cards (project / case-study),
- *  firing content_view once per slug per session at ≥50% visibility. */
+ *  firing content_view once per slug per session at ≥50% visibility.
+ *  Starts the proactive nudge engine (own clock, own fetch). */
 export function AnalyticsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     tracker.init();
+    // Proactive chat nudges — dynamic import keeps it out of the critical bundle.
+    void import("@/lib/chat/nudges")
+      .then((m) => m.initNudgeEngine())
+      .catch(() => {
+        /* never break the page */
+      });
     const seen = new Set<string>();
     const io = new IntersectionObserver(
       (entries) => {

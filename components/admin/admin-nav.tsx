@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { BarChart3, Layers, Clock3, Link2, MousePointerClick, Users, LogOut } from "lucide-react";
+import { BarChart3, Layers, Clock3, Link2, MousePointerClick, Users, Bot, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 
@@ -12,6 +12,7 @@ const LINKS = [
   { href: "/admin/funnel", label: "Funnel", Icon: MousePointerClick },
   { href: "/admin/content", label: "Content", Icon: Clock3 },
   { href: "/admin/sessions", label: "Sessions", Icon: Users },
+  { href: "/admin/bot", label: "Pulak Mini", Icon: Bot },
 ];
 
 export function AdminNav({ horizontal = false }: { horizontal?: boolean }) {

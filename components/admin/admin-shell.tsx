@@ -12,6 +12,7 @@ const TITLES: Record<string, string> = {
   "/admin/funnel": "Funnel",
   "/admin/content": "Content",
   "/admin/sessions": "Sessions",
+  "/admin/bot": "Pulak Mini",
 };
 
 /* Admin chrome. The login route renders bare (no sidebar) — everything else

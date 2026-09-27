@@ -5,6 +5,7 @@ import { Send, Sparkles, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { tracker } from "@/lib/analytics/tracker";
 import { executeBotAction } from "@/lib/chat/actions";
+import { NUDGE_EVENT, type NudgeRule } from "@/lib/chat/nudges";
 import type { BotStep, ChatDonePayload } from "@/lib/chat/protocol";
 
 interface Message {
@@ -31,8 +32,34 @@ export function ChatAssistant() {
   const [typing, setTyping] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [followups, setFollowups] = useState<string[]>([]);
+  const [teaser, setTeaser] = useState<NudgeRule | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const runId = useRef(0);
+  /* Reply clock: armed when bot text lands (or panel opens), consumed on the
+     next send. Measures user think-time; capped so abandoned tabs don't
+     pollute the average. */
+  const replyClock = useRef<number | null>(null);
+  const REPLY_CAP_MS = 300_000;
+  /* Nudge policy: max 2 per session, 90s cooldown after a shown teaser,
+     never while open/typing. Engine fires once per rule; skips are final. */
+  const nudgesShown = useRef(0);
+  const lastNudgeAt = useRef(0);
+
+  /* Proactive teasers from the dwell engine. */
+  useEffect(() => {
+    const onNudge = (e: Event) => {
+      const rule = (e as CustomEvent<NudgeRule>).detail;
+      if (!rule || open || typing) return;
+      if (nudgesShown.current >= 2) return;
+      if (Date.now() - lastNudgeAt.current < 90_000) return;
+      nudgesShown.current += 1;
+      lastNudgeAt.current = Date.now();
+      dismissBanner();
+      setTeaser(rule);
+    };
+    window.addEventListener(NUDGE_EVENT, onNudge);
+    return () => window.removeEventListener(NUDGE_EVENT, onNudge);
+  }, [open, typing]);
 
   useEffect(() => {
     setMounted(true);
@@ -59,13 +86,25 @@ export function ChatAssistant() {
 
   const handleToggle = () => {
     dismissBanner();
-    if (!open) tracker.track("chat_open");
+    if (!open) {
+      tracker.track("chat_open");
+      replyClock.current = Date.now();
+    }
     setOpen((o) => !o);
   };
 
   const send = async (text: string) => {
     const trimmed = text.trim();
     if (!trimmed || typing) return;
+    // Consume the reply clock: think-time since the last bot text landed.
+    if (replyClock.current !== null) {
+      const delta = Date.now() - replyClock.current;
+      replyClock.current = null;
+      tracker.track("chat_user_reply", {
+        dwell_ms: Math.min(Math.max(Math.round(delta), 0), REPLY_CAP_MS),
+        meta: delta > REPLY_CAP_MS ? { capped: true } : undefined,
+      });
+    }
     const run = ++runId.current;
     const alive = () => runId.current === run;
     const history = [...messages, { role: "user" as const, text: trimmed }].slice(-10);
@@ -173,6 +212,7 @@ export function ChatAssistant() {
         }
         return copy;
       });
+      replyClock.current = Date.now();
       const firstAction = rawSteps[0].action;
       if (firstAction) {
         window.setTimeout(() => {
@@ -184,6 +224,7 @@ export function ChatAssistant() {
         if (!alive()) return;
         const step = rawSteps[i];
         setMessages((m) => [...m, { role: "bot", text: step.text }]);
+        replyClock.current = Date.now();
         if (step.action) {
           await new Promise((r) => setTimeout(r, 350));
           if (!alive()) return;
@@ -206,6 +247,7 @@ export function ChatAssistant() {
         }
         return copy;
       });
+      replyClock.current = Date.now();
     }
   };
 
@@ -345,6 +387,35 @@ export function ChatAssistant() {
           </button>
         </form>
       </div>
+
+      {/* Proactive teaser: dwell-triggered, one click starts the tour */}
+      {teaser && !open && (
+        <div className="pointer-events-auto relative max-w-[260px] rounded-2xl border border-primary/30 bg-card p-3.5 pr-8 text-sm leading-relaxed text-card-foreground shadow-xl shadow-primary/10 transition-all duration-500">
+          <Sparkles className="mb-1 h-4 w-4 text-primary" />
+          <p>{teaser.teaser}</p>
+          <button
+            onClick={() => {
+              const opener = teaser.opener;
+              setTeaser(null);
+              setOpen(true);
+              tracker.track("chat_open");
+              replyClock.current = Date.now();
+              void send(opener);
+            }}
+            className="mt-2.5 rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground transition-all hover:shadow-md hover:shadow-primary/25"
+          >
+            Show me →
+          </button>
+          <button
+            onClick={() => setTeaser(null)}
+            aria-label="Dismiss suggestion"
+            className="absolute right-2 top-2 rounded-full p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+          <div className="absolute -bottom-1.5 right-6 h-3 w-3 rotate-45 border-b border-r border-primary/30 bg-card" />
+        </div>
+      )}
 
       {/* Launcher button */}
       <button
