@@ -107,6 +107,8 @@ export function ChatAssistant() {
     }
     const run = ++runId.current;
     const alive = () => runId.current === run;
+    // TTFT clock: send → first streamed token (rendering vs provider split).
+    const ttftStart = performance.now();
     const history = [...messages, { role: "user" as const, text: trimmed }].slice(-10);
     setMessages([
       ...messages,
@@ -150,6 +152,8 @@ export function ChatAssistant() {
         if (!firstToken) {
           firstToken = true;
           finishTyping();
+          const ttft = Math.max(0, Math.round(performance.now() - ttftStart));
+          tracker.track("chat_ttft", { dwell_ms: ttft });
         }
         const snapshot = streamed;
         setMessages((m) => {

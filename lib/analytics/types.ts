@@ -22,6 +22,7 @@ export const EVENT_TYPES = [
   "social_click",
   "chat_open",
   "chat_user_reply",
+  "chat_ttft",
 ] as const;
 
 export type EventType = (typeof EVENT_TYPES)[number];

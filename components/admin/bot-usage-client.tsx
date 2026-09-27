@@ -18,6 +18,8 @@ interface UsageData {
   tokens_out: number;
   avg_latency_ms: number;
   median_latency_ms: number;
+  avg_ttft_ms: number;
+  median_ttft_ms: number;
   avg_user_reply_ms: number;
   median_user_reply_ms: number;
   month: {
@@ -70,6 +72,8 @@ export function BotUsageClient() {
         tokens_out: body.overview?.tokens_out ?? 0,
         avg_latency_ms: Number(body.overview?.avg_latency_ms ?? 0),
         median_latency_ms: Number(body.overview?.median_latency_ms ?? 0),
+        avg_ttft_ms: Number(body.overview?.avg_ttft_ms ?? 0),
+        median_ttft_ms: Number(body.overview?.median_ttft_ms ?? 0),
         avg_user_reply_ms: Number(body.overview?.avg_user_reply_ms ?? 0),
         median_user_reply_ms: Number(body.overview?.median_user_reply_ms ?? 0),
         month: body.month,
@@ -141,6 +145,11 @@ export function BotUsageClient() {
               label="Median bot reply"
               value={formatMs(data.median_latency_ms)}
               hint={`Mean ${formatMs(data.avg_latency_ms)} · successful generations`}
+            />
+            <StatCard
+              label="Median first token"
+              value={formatMs(data.median_ttft_ms)}
+              hint={`Mean ${formatMs(data.avg_ttft_ms)} · send → first streamed token`}
             />
             <StatCard
               label="Median user reply"

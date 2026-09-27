@@ -24,8 +24,10 @@ function matchesAction(stepActions, expected) {
 }
 
 async function runCase(c) {
+  const started = Date.now();
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), CASE_TIMEOUT_MS);
+  const finish = (result) => ({ ...result, ms: Date.now() - started });
   try {
     const res = await fetch(URL, {
       method: "POST",
@@ -35,7 +37,7 @@ async function runCase(c) {
       }),
       signal: ctrl.signal,
     });
-    if (!res.ok || !res.body) return { pass: false, reason: `http_${res.status}` };
+    if (!res.ok || !res.body) return finish({ pass: false, reason: `http_${res.status}` });
     const text = await res.text();
     const doneLine = text
       .split("\n")
@@ -49,7 +51,7 @@ async function runCase(c) {
         }
       })
       .find((j) => j && j.done);
-    if (!doneLine) return { pass: false, reason: "no_done_event" };
+    if (!doneLine) return finish({ pass: false, reason: "no_done_event" });
     const { steps, fallback, fallback_reason } = doneLine.done;
     const joined = steps.map((s) => s.text).join("\n").toLowerCase();
     const preview = steps
@@ -61,30 +63,60 @@ async function runCase(c) {
     );
     const actions = steps.map((s) => s.action).filter(Boolean);
     const actionOk = matchesAction(actions, c.expect_action ?? null);
-    if (missing.length === 0 && actionOk) return { pass: true };
+    if (missing.length === 0 && actionOk)
+      return finish({ pass: true, fallback: fallback ?? false });
     const reasons = [];
     if (fallback) reasons.push(`fallback:${fallback_reason ?? "?"}`);
     if (missing.length > 0) reasons.push(`missing: ${missing.join(", ")}`);
     if (!actionOk)
       reasons.push(`action: got ${JSON.stringify(actions)} want ${JSON.stringify(c.expect_action)}`);
     reasons.push(`said: "${preview}"`);
-    return { pass: false, reason: reasons.join(" | "), steps };
+    return finish({
+      pass: false,
+      reason: reasons.join(" | "),
+      steps,
+      fallback: fallback ?? false,
+      fallback_reason: fallback_reason ?? null,
+    });
   } catch (e) {
-    return { pass: false, reason: e?.name === "AbortError" ? "timeout" : String(e) };
+    return finish({
+      pass: false,
+      reason: e?.name === "AbortError" ? "timeout" : String(e),
+    });
   } finally {
     clearTimeout(timer);
   }
 }
 
+function percentile(sorted, p) {
+  if (sorted.length === 0) return 0;
+  return sorted[Math.min(sorted.length - 1, Math.floor(p * sorted.length))];
+}
+
 let passed = 0;
+const results = [];
 for (const c of cases) {
   const r = await runCase(c);
+  results.push(r);
   if (r.pass) {
     passed++;
-    console.log(`PASS  ${c.q}`);
+    console.log(`PASS  ${c.q} (${r.ms}ms)`);
   } else {
     console.log(`FAIL  ${c.q}\n      ${r.reason}`);
   }
 }
 console.log(`\n${passed}/${cases.length} passed`);
+
+const times = results.map((r) => r.ms).sort((a, b) => a - b);
+const timeouts = results.filter((r) => /timeout/.test(r.reason ?? "")).length;
+const fallbacks = results.filter((r) => r.fallback).length;
+console.log(
+  `timing: p50=${percentile(times, 0.5)}ms p95=${percentile(times, 0.95)}ms | ` +
+    `timeouts=${timeouts}/${results.length} fallbacks=${fallbacks}/${results.length}`,
+);
+if (timeouts / results.length > 0.3) {
+  console.log(
+    "NOTE: timeout share >30% — throttling dominates. Fix latency (tier/cache) before prompt work.",
+  );
+}
 process.exit(passed === cases.length ? 0 : 1);
