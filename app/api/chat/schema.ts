@@ -11,7 +11,10 @@ const messageSchema = z.object({
 export const chatSchema = z
   .object({
     session_id: z.string().uuid().optional(),
-    messages: z.array(messageSchema).min(1).max(10),
+    // Evals/dev callers set lite:true to spend cheap-model quota instead
+    // of premium RPD. Harmless publicly: Lite is the cheaper path.
+    lite: z.boolean().optional().default(false),
+    messages: z.array(messageSchema).min(1).max(6),
   })
   .transform((v) => ({
     ...v,

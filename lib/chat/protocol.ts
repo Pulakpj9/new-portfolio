@@ -17,6 +17,7 @@ export interface ChatDonePayload {
   steps: BotStep[];
   followups: string[];
   fallback: boolean;
-  fallback_reason?: "no_key" | "provider_error" | "timeout" | "capped" | "disabled";
+  fallback_reason?: "no_key" | "provider_error" | "timeout" | "capped" | "disabled" | "quota";
+  model?: string;
   usage?: { input: number; output: number };
 }

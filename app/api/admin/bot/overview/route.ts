@@ -59,6 +59,12 @@ export async function GET(req: Request) {
     }),
     { in: 0, out: 0 },
   );
+  const todayStart = new Date();
+  todayStart.setUTCHours(0, 0, 0, 0);
+  const { count: todayChats } = await sb
+    .from("bot_conversations")
+    .select("id", { count: "exact", head: true })
+    .gte("time", todayStart.toISOString());
   const capRaw = Number(process.env.CHAT_MONTHLY_CAP_USD);
   const cap = Number.isFinite(capRaw) && capRaw > 0 ? capRaw : null;
   const spent = estimateCostUsd(monthTokens.in, monthTokens.out);
@@ -74,6 +80,7 @@ export async function GET(req: Request) {
   return NextResponse.json({
     range,
     overview: overview.data,
+    today: { chats: todayChats ?? 0 },
     month: {
       tokens_in: monthTokens.in,
       tokens_out: monthTokens.out,

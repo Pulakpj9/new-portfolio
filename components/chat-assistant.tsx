@@ -109,7 +109,7 @@ export function ChatAssistant() {
     const alive = () => runId.current === run;
     // TTFT clock: send → first streamed token (rendering vs provider split).
     const ttftStart = performance.now();
-    const history = [...messages, { role: "user" as const, text: trimmed }].slice(-10);
+    const history = [...messages, { role: "user" as const, text: trimmed }].slice(-6);
     setMessages([
       ...messages,
       { role: "user", text: trimmed },

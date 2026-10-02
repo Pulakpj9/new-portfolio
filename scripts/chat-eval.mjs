@@ -10,10 +10,21 @@ import { readFileSync } from "node:fs";
 
 const URL = process.env.CHAT_EVAL_URL ?? "http://localhost:3000/api/chat";
 const CASE_TIMEOUT_MS = 45_000;
+// Premium RPD is 20/day: evals run on the cheap model unless --full.
+// Never compare pass rates across models.
+// Pacing: free-tier RPM (15 on Lite) rate-limits bursts — space cases out.
+// EVAL_DELAY_MS (default 5000), --fast to skip the delay.
+const LITE = !process.argv.includes("--full");
+const DELAY_MS = process.argv.includes("--fast")
+  ? 0
+  : Number(process.env.EVAL_DELAY_MS ?? 5000);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const cases = JSON.parse(readFileSync("evals/chat-evals.json", "utf8"));
 
 function matchesAction(stepActions, expected) {
+  // Array = any-of (navigation is a bonus for factual Q&A; null = no action OK).
+  if (Array.isArray(expected)) return expected.some((o) => matchesAction(stepActions, o));
   if (expected === null) return stepActions.length === 0;
   return stepActions.some((a) => {
     if (!a || a.type !== expected.type) return false;
@@ -33,6 +44,7 @@ async function runCase(c) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        lite: LITE,
         messages: [{ role: "user", content: c.q }],
       }),
       signal: ctrl.signal,
@@ -58,9 +70,12 @@ async function runCase(c) {
       .map((s) => s.text)
       .join(" / ")
       .slice(0, 300);
-    const missing = (c.expect_contains ?? []).filter(
-      (s) => !joined.includes(String(s).toLowerCase()),
-    );
+    // String = must contain; array = any-of variants (e.g. "1M" vs "1 million").
+    const hit = (s) =>
+      Array.isArray(s)
+        ? s.some((v) => joined.includes(String(v).toLowerCase()))
+        : joined.includes(String(s).toLowerCase());
+    const missing = (c.expect_contains ?? []).filter((s) => !hit(s));
     const actions = steps.map((s) => s.action).filter(Boolean);
     const actionOk = matchesAction(actions, c.expect_action ?? null);
     if (missing.length === 0 && actionOk)
@@ -95,7 +110,9 @@ function percentile(sorted, p) {
 
 let passed = 0;
 const results = [];
-for (const c of cases) {
+console.log(`eval model: ${LITE ? "lite (cheap quota)" : "FULL (premium quota)"}`);
+for (const [i, c] of cases.entries()) {
+  if (i > 0 && DELAY_MS > 0) await sleep(DELAY_MS);
   const r = await runCase(c);
   results.push(r);
   if (r.pass) {
@@ -110,9 +127,10 @@ console.log(`\n${passed}/${cases.length} passed`);
 const times = results.map((r) => r.ms).sort((a, b) => a - b);
 const timeouts = results.filter((r) => /timeout/.test(r.reason ?? "")).length;
 const fallbacks = results.filter((r) => r.fallback).length;
+const quotas = results.filter((r) => /fallback:quota/.test(r.reason ?? "")).length;
 console.log(
   `timing: p50=${percentile(times, 0.5)}ms p95=${percentile(times, 0.95)}ms | ` +
-    `timeouts=${timeouts}/${results.length} fallbacks=${fallbacks}/${results.length}`,
+    `timeouts=${timeouts}/${results.length} fallbacks=${fallbacks}/${results.length} quota=${quotas}/${results.length}`,
 );
 if (timeouts / results.length > 0.3) {
   console.log(

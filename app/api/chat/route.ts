@@ -7,7 +7,12 @@ import {
   buildSystemPrompt,
   splitSteps,
 } from "@/content/chat-kb";
+import { caseStudies } from "@/content/case-studies";
+import { experiences } from "@/content/experience";
+import { projects } from "@/content/projects";
+import { profile } from "@/content/contact";
 import { botReply, FALLBACK_FOLLOWUPS } from "@/lib/chat/fallback";
+import { deterministicAction } from "@/lib/chat/deterministic";
 import { estimateCostUsd } from "@/lib/chat/cost";
 import type { BotAction, BotStep, ChatDonePayload } from "@/lib/chat/protocol";
 import {
@@ -21,7 +26,14 @@ import { chatSchema } from "./schema";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const LLM_TIMEOUT_MS = 30_000;
+/* Per-attempt time budgets. A stalled primary (free-tier queueing) fails
+   over to Lite on a FRESH budget instead of dying with a shared clock:
+   typical bad case is now ~20s + a fast Lite answer, not 30s + fallback.
+   TTFT_LIMIT_MS cuts over much earlier: a healthy stream always emits its
+   first token fast, so silence means queueing and the full budget is waste. */
+const PRIMARY_BUDGET_MS = 20_000;
+const FAILOVER_BUDGET_MS = 20_000;
+const TTFT_LIMIT_MS = 8_000;
 
 /* Debug logging: on in dev, or anywhere with CHAT_DEBUG=true. Shows model,
    latency, token usage, tools, and a reply preview per request — the fastest
@@ -93,10 +105,7 @@ function toAction(call: ProviderToolCall): BotAction | null {
   }
 }
 
-function intentFor(
-  actions: (BotAction | null)[],
-  text: string,
-): string {
+function intentFor(actions: (BotAction | null)[], text: string): string {
   const first = actions.find((a): a is BotAction => a !== null);
   if (first) {
     if (first.type === "scroll") {
@@ -142,6 +151,62 @@ function followupsFor(actions: (BotAction | null)[]): string[] {
     "What projects has he built?",
     "How do I contact him?",
   ];
+}
+
+/* Deterministic backstop: when the model emits a tool call with no text
+   (observed on Flash-tier models), describe the target from the KB instead
+   of showing an empty bubble. Grounded by construction — never hallucinated. */
+const SCROLL_LINES: Record<string, string> = {
+  "#about":
+    "Backend-focused full-stack developer — Node.js, TypeScript, React, MySQL and MongoDB, 1.5+ years full-time. Details below. 👇",
+  "#experience":
+    "Backend-focused Node.js Developer at Infoware India (Jul 2024–Present); previously intern there and Analyst Intern at Capgemini. Full timeline below. 👇",
+  "#projects":
+    "Three shipped backends: Activity Tracker (~1M records/week), WhatsApp CRM (12+ no-code elements), SalesApp (30+ field staff). Below. 👇",
+  "#case-studies": "Deep dives with metrics for all three projects below. 👇",
+  "#contact": `Fastest path is email: ${profile.email}. Contact section below. 👇`,
+  top: "Scrolled you to the top — take a look around. 👇",
+};
+
+function describeAction(action: BotAction): string | null {
+  try {
+    switch (action.type) {
+      case "expand":
+      case "highlight": {
+        const pool = action.kind === "project" ? projects : caseStudies;
+        const item = pool.find((x) => x.id === action.slug);
+        if (!item) return null;
+        if (action.kind === "project") {
+          const p = item as (typeof projects)[number];
+          const metric = p.metrics[0];
+          return `${p.title} — ${p.tagline} Key number: ${metric.label} ${metric.value}. I've highlighted it on the page. 👇`;
+        }
+        const c = item as (typeof caseStudies)[number];
+        const firstResult = c.results[0];
+        return `${c.title}. ${c.overview.split(". ")[0]}. Standout result: ${firstResult.metric} ${firstResult.value}. I've opened the full story below. 👇`;
+      }
+      case "scroll": {
+        const roleMatch = /^#experience-(\d+)$/.exec(action.target);
+        if (roleMatch) {
+          const exp = experiences[Number(roleMatch[1])];
+          if (exp) {
+            return `${exp.role} at ${exp.company} (${exp.period}) — details on the timeline below. 👇`;
+          }
+          return "Here's that role on the timeline below. 👇";
+        }
+        return (
+          SCROLL_LINES[action.target] ?? "Scrolled you there — take a look. 👇"
+        );
+      }
+      case "suggest_contact": {
+        return `You can reach him at ${profile.email} — I've scrolled to the contact section below. 👇`;
+      }
+      default:
+        return null;
+    }
+  } catch {
+    return null;
+  }
 }
 
 const stripEmail = (s: string) =>
@@ -275,6 +340,49 @@ function cappedResponse(text: string): Response {
   });
 }
 
+/* Exact-match answer cache (per model, 1h TTL, 50 entries). Portfolio
+   questions repeat constantly; a hit skips tokens, latency, and quota.
+   Only successful LLM answers are cached — never fallbacks. Logging still
+   records the exchange (latency null, excluded from medians). */
+
+interface CacheEntry {
+  at: number;
+  steps: BotStep[];
+  followups: string[];
+  tools: string[];
+  intent: string;
+}
+
+const ANSWER_CACHE = new Map<string, CacheEntry>();
+const CACHE_TTL_MS = 3_600_000;
+const CACHE_MAX = 50;
+
+function cacheKey(model: string, question: string): string {
+  return `${model}::${question.trim().toLowerCase().replace(/\s+/g, " ")}`;
+}
+
+function cacheGet(model: string, question: string): CacheEntry | undefined {
+  const entry = ANSWER_CACHE.get(cacheKey(model, question));
+  if (!entry) return undefined;
+  if (Date.now() - entry.at > CACHE_TTL_MS) {
+    ANSWER_CACHE.delete(cacheKey(model, question));
+    return undefined;
+  }
+  return entry;
+}
+
+function cacheSet(
+  model: string,
+  question: string,
+  entry: Omit<CacheEntry, "at">,
+): void {
+  if (ANSWER_CACHE.size >= CACHE_MAX) {
+    const oldest = ANSWER_CACHE.keys().next();
+    if (!oldest.done) ANSWER_CACHE.delete(oldest.value);
+  }
+  ANSWER_CACHE.set(cacheKey(model, question), { ...entry, at: Date.now() });
+}
+
 export async function POST(req: Request) {
   let body: unknown;
   try {
@@ -287,48 +395,51 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "validation_failed" }, { status: 400 });
   }
 
-  const { messages, session_id } = parsed.data;
+  const { messages, session_id, lite } = parsed.data;
   const lastUser =
     [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
 
+  // Pre-provider guards run in PARALLEL: each is a DB round-trip and they must
+  // all resolve before the first token, so sequential awaits would stack
+  // straight onto TTFT. Fail-open semantics preserved per guard.
+  const monthlyCap = Number(process.env.CHAT_MONTHLY_CAP_USD);
+  const capSet = Number.isFinite(monthlyCap) && monthlyCap > 0;
+  const [enabled, sessCount, spent] = await Promise.all([
+    botEnabled(),
+    session_id ? sessionChatCount(session_id) : Promise.resolve(null),
+    capSet ? monthSpendUsd() : Promise.resolve(null),
+  ]);
+
   // Explicit kill-switch wins over everything (503 → client offline note).
-  if (!(await botEnabled())) {
+  if (!enabled) {
     return NextResponse.json({ error: "bot_disabled" }, { status: 503 });
   }
 
   // Per-session cap: 15 chats per anonymous session, then a polite stop.
-  if (session_id) {
-    const count = await sessionChatCount(session_id);
-    if (count !== null && count >= SESSION_CHAT_CAP) {
-      return cappedResponse(
-        "Easy on the questions — you've hit the chat limit for this visit. Email pulakpj9@gmail.com and he'll pick it up directly.",
-      );
-    }
+  if (sessCount !== null && sessCount >= SESSION_CHAT_CAP) {
+    return cappedResponse(
+      "Easy on the questions — you've hit the chat limit for this visit. Email pulakpj9@gmail.com and he'll pick it up directly.",
+    );
   }
 
   // Monthly budget cap (env, USD). Unset = uncapped.
-  const monthlyCap = Number(process.env.CHAT_MONTHLY_CAP_USD);
-  if (Number.isFinite(monthlyCap) && monthlyCap > 0) {
-    const spent = await monthSpendUsd();
-    if (spent !== null && spent >= monthlyCap) {
-      console.error(
-        `[chat] monthly budget reached: $${spent.toFixed(2)} >= $${monthlyCap}`,
-      );
-      return cappedResponse(
-        "Chat is paused for now — email pulakpj9@gmail.com and he'll reply directly.",
-      );
-    }
+  if (capSet && spent !== null && spent >= monthlyCap) {
+    console.error(
+      `[chat] monthly budget reached: $${spent.toFixed(2)} >= $${monthlyCap}`,
+    );
+    return cappedResponse(
+      "Chat is paused for now — email pulakpj9@gmail.com and he'll reply directly.",
+    );
   }
 
-  const config = providerConfig();
+  const config = providerConfig(lite);
 
   // Generation clock: validation + caps excluded, LLM-or-fallback duration only.
   const chatStart = Date.now();
 
   const stream = new ReadableStream<string>({
     async start(controller) {
-      const send = (payload: unknown) =>
-        controller.enqueue(sseEncode(payload));
+      const send = (payload: unknown) => controller.enqueue(sseEncode(payload));
 
       // Degraded mode: no key configured → regex brain, same wire format.
       if (!config) {
@@ -343,28 +454,81 @@ export async function POST(req: Request) {
         );
       }
 
+      // Exact-match cache: repeat questions skip tokens, latency, quota.
+      const hit = cacheGet(config.model, lastUser);
+      if (hit) {
+        if (DEBUG) console.log(`[chat] cache_hit model=${config.model}`);
+        logConversation({
+          sessionId: session_id,
+          question: lastUser,
+          intent: hit.intent,
+          tools: hit.tools,
+        });
+        send({
+          done: {
+            steps: hit.steps,
+            followups: hit.followups,
+            fallback: false,
+            model: config.model,
+          } satisfies ChatDonePayload,
+        });
+        controller.close();
+        return;
+      }
+
       const started = Date.now();
-      const ctrl = new AbortController();
-      const timeout = setTimeout(() => ctrl.abort(), LLM_TIMEOUT_MS);
-      try {
-        const result = await streamCompletion(
-          config,
-          buildSystemPrompt(),
-          messages,
-          CHAT_TOOLS,
-          { onToken: (token) => send({ token }) },
-          ctrl.signal,
-        );
-        clearTimeout(timeout);
+
+      // One full provider attempt with its OWN time budget: stream → build
+      // steps → log → cache → send. Separate budgets mean a timed-out primary
+      // can still fail over instead of dying with the shared clock.
+      // TTFT cutover: if no token arrives within TTFT_LIMIT_MS, abort early
+      // and let the caller fail over — a healthy stream always talks fast,
+      // so silence means queueing, and waiting the full budget is pure waste.
+      const attempt = async (cfg: typeof config, budgetMs: number): Promise<void> => {
+        const c = new AbortController();
+        const t = setTimeout(() => c.abort(), budgetMs);
+        let serverTtft: number | null = null;
+        const ttftTimer = setTimeout(() => c.abort(), TTFT_LIMIT_MS);
+        try {
+          const attemptStart = Date.now();
+          const result = await streamCompletion(
+            cfg,
+            buildSystemPrompt(),
+            messages,
+            CHAT_TOOLS,
+            {
+              onToken: (token) => {
+                if (serverTtft === null) {
+                  serverTtft = Date.now() - attemptStart;
+                  clearTimeout(ttftTimer);
+                }
+                send({ token });
+              },
+            },
+            c.signal,
+          );
 
         const texts = splitSteps(result.text);
-        const actions = result.tools.map(toAction);
+        const modelActions = result.tools.map(toAction);
+        // Model navigated nowhere but the request is explicitly navigational:
+        // deterministic backstop (reproducible; the model keeps everything else).
+        // New array (not mutation): every() narrows in place to null[].
+        const det =
+          modelActions.every((a) => a === null)
+            ? deterministicAction(lastUser)
+            : null;
+        const actions: (BotAction | null)[] = det
+          ? [det, ...modelActions.slice(1)]
+          : modelActions;
         const steps: BotStep[] = (texts.length > 0 ? texts : [""]).map(
           (text, i) => {
-            const step: BotStep = {
-              text: text || "Here's what I found on the page. 👇",
-            };
             const action = actions[i];
+            // Empty text + valid action → deterministic KB backstop (never blank).
+            const resolved =
+              text.trim() || (action ? describeAction(action) : null) || "";
+            const step: BotStep = {
+              text: resolved || "Here's what I found on the page. 👇",
+            };
             if (action) step.action = action;
             return step;
           },
@@ -373,28 +537,76 @@ export async function POST(req: Request) {
           steps,
           followups: followupsFor(actions),
           fallback: false,
+          model: cfg.model,
           usage: result.usage,
         };
+        const intent = intentFor(actions, result.text);
+        const toolNames = result.tools.map((t) => t.name);
         logConversation({
           sessionId: session_id,
           question: lastUser,
-          intent: intentFor(actions, result.text),
-          tools: result.tools.map((t) => t.name),
+          intent,
+          tools: toolNames,
           usage: result.usage,
           latencyMs: Date.now() - chatStart,
         });
+        cacheSet(cfg.model, lastUser, {
+          steps,
+          followups: payload.followups,
+          tools: toolNames,
+          intent,
+        });
         if (DEBUG) {
           console.log(
-            `[chat] ok ${Date.now() - started}ms in=${result.usage.input} out=${result.usage.output} tools=[${result.tools.map((t) => t.name).join(",")}] preview="${result.text.slice(0, 200).replace(/\n/g, " ")}"`,
+            `[chat] ok ${Date.now() - started}ms model=${cfg.model} ttft=${serverTtft ?? "none"}ms in=${result.usage.input} out=${result.usage.output} finish=${result.finishReason ?? "?"} tools=[${toolNames.join(",")}] preview="${result.text.slice(0, 200).replace(/\n/g, " ")}"`,
           );
         }
         send({ done: payload });
+        } finally {
+          clearTimeout(t);
+          clearTimeout(ttftTimer);
+        }
+      };
+
+      const failoverReason = (
+        err: unknown,
+      ): NonNullable<ChatDonePayload["fallback_reason"]> => {
+        const msg = err instanceof Error ? err.message : "";
+        if (/provider_http_429/.test(msg)) return "quota";
+        if (err instanceof Error && err.name === "AbortError") return "timeout";
+        return "provider_error";
+      };
+
+      try {
+        await attempt(config, PRIMARY_BUDGET_MS);
       } catch (err) {
-        clearTimeout(timeout);
-        const timedOut =
-          err instanceof Error && err.name === "AbortError";
+        // Fail over to the cheap model once: different capacity pool, and
+        // 500 RPD of headroom — including on timeouts, which get a FRESH
+        // budget (the stall was the other model's, not ours). Skipped when
+        // already on Lite, or for non-retryable failures.
+        const msg = err instanceof Error ? err.message : "";
+        const timedOut = err instanceof Error && err.name === "AbortError";
+        const retryable =
+          /provider_http_(429|502|503|504)/.test(msg) || timedOut;
+        const liteModel =
+          process.env.CHAT_MODEL_LITE ?? "gemini-3.5-flash-lite";
+        if (!lite && retryable && liteModel !== config.model) {
+          if (DEBUG) {
+            console.log(
+              `[chat] primary failed (${timedOut ? "timeout" : msg}), failing over to ${liteModel}`,
+            );
+          }
+          try {
+            await attempt({ ...config, model: liteModel }, FAILOVER_BUDGET_MS);
+            return;
+          } catch (err2) {
+            console.error("[chat] failover failed:", err2);
+            send({ done: fallbackDone(lastUser, failoverReason(err2)) });
+            return;
+          }
+        }
         console.error("[chat] provider failed:", err);
-        send({ done: fallbackDone(lastUser, timedOut ? "timeout" : "provider_error") });
+        send({ done: fallbackDone(lastUser, failoverReason(err)) });
       } finally {
         controller.close();
       }

@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 
 interface UsageData {
   chats: number;
+  todayChats: number;
   tokens_in: number;
   tokens_out: number;
   avg_latency_ms: number;
@@ -68,6 +69,7 @@ export function BotUsageClient() {
       const body = await res.json();
       setData({
         chats: body.overview?.chats ?? 0,
+        todayChats: body.today?.chats ?? 0,
         tokens_in: body.overview?.tokens_in ?? 0,
         tokens_out: body.overview?.tokens_out ?? 0,
         avg_latency_ms: Number(body.overview?.avg_latency_ms ?? 0),
@@ -134,6 +136,11 @@ export function BotUsageClient() {
         <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard label="Chats (30d)" value={formatNum(data.chats)} />
+            <StatCard
+              label="Today"
+              value={formatNum(data.todayChats)}
+              hint="all models · free-tier RPD is the wall (~20 premium)"
+            />
             <StatCard label="Tokens in/out" value={`${formatNum(data.tokens_in)} / ${formatNum(data.tokens_out)}`} />
             <StatCard label="Est. cost (30d)" value={formatUsd(est)} hint="at $0.30 / $2.50 per 1M tokens" />
             <StatCard
