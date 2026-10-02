@@ -7,8 +7,9 @@ import {
   ErrorState,
   LoadingGrid,
   Panel,
+  StatCard,
 } from "@/components/admin/ui";
-import { daysToRange, formatNum } from "@/components/admin/format";
+import { daysToRange, formatDay, formatNum } from "@/components/admin/format";
 import { cn } from "@/lib/utils";
 
 interface ContentRow {
@@ -19,9 +20,17 @@ interface ContentRow {
   video_plays: number;
 }
 
+interface ResumeStats {
+  total: number;
+  sessions: number;
+  trend: { day: string; downloads: number }[];
+  by_channel: { channel: string; downloads: number; sessions: number }[];
+}
+
 export function ContentClient() {
   const { days, channel } = useFilters();
   const [rows, setRows] = useState<ContentRow[]>([]);
+  const [resume, setResume] = useState<ResumeStats | null>(null);
   const [status, setStatus] = useState<"loading" | "error" | "ready">("loading");
   const [detail, setDetail] = useState<string | null>(null);
 
@@ -32,20 +41,34 @@ export function ContentClient() {
       const { from, to } = daysToRange(days);
       const qs = new URLSearchParams({ from, to });
       if (channel) qs.set("channel", channel);
-      const res = await fetch(`/api/admin/content?${qs.toString()}`);
-      if (!res.ok) {
+      const [contentRes, resumeRes] = await Promise.all([
+        fetch(`/api/admin/content?${qs.toString()}`),
+        fetch(`/api/admin/resumes?${qs.toString()}`),
+      ]);
+      if (!contentRes.ok) {
         let d: string | null = null;
         try {
-          const body = await res.json();
+          const body = await contentRes.json();
           d = typeof body.detail === "string" ? body.detail : null;
         } catch {
           /* ignore */
         }
         setDetail(d);
-        throw new Error("bad status");
+        throw new Error("bad content status");
       }
-      const body = await res.json();
+      const body = await contentRes.json();
       setRows(body.rows ?? []);
+      if (resumeRes.ok) {
+        const rbody = await resumeRes.json();
+        setResume({
+          total: rbody.total ?? 0,
+          sessions: rbody.sessions ?? 0,
+          trend: rbody.trend ?? [],
+          by_channel: rbody.by_channel ?? [],
+        });
+      } else {
+        setResume(null);
+      }
       setStatus("ready");
     } catch {
       setStatus("error");
@@ -71,6 +94,67 @@ export function ContentClient() {
 
       {status === "loading" && <LoadingGrid rows={2} />}
       {status === "error" && <ErrorState onRetry={load} detail={detail} />}
+      {status === "ready" && resume && (
+        <div className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <StatCard
+              label="Resume downloads"
+              value={formatNum(resume.total)}
+              hint={`${formatNum(resume.sessions)} sessions grabbed it`}
+            />
+            <StatCard
+              label="Downloads / session"
+              value={
+                resume.sessions > 0
+                  ? (resume.total / resume.sessions).toFixed(2)
+                  : "—"
+              }
+              hint="repeat downloads within a visit"
+            />
+          </div>
+          {resume.trend.length > 0 && (
+            <Panel title="Downloads per day" subtitle="In the selected range">
+              <div className="flex h-24 items-end gap-1">
+                {resume.trend.map((t) => {
+                  const max = Math.max(1, ...resume.trend.map((x) => x.downloads));
+                  return (
+                    <div
+                      key={t.day}
+                      title={`${formatDay(t.day)}: ${t.downloads}`}
+                      className="min-w-0 flex-1 rounded-t bg-primary/70"
+                      style={{ height: `${Math.max(4, (t.downloads / max) * 100)}%` }}
+                    />
+                  );
+                })}
+              </div>
+              <p className="mt-2 font-mono text-[11px] text-muted-foreground">
+                {formatDay(resume.trend[0].day)} →{" "}
+                {formatDay(resume.trend[resume.trend.length - 1].day)}
+              </p>
+            </Panel>
+          )}
+          {resume.by_channel.length > 0 && (
+            <Panel title="By channel" subtitle="Which share links convert to downloads">
+              <div className="space-y-2">
+                {resume.by_channel.map((c) => (
+                  <div
+                    key={c.channel}
+                    className="flex items-center justify-between rounded-2xl border border-border px-4 py-2.5 text-sm"
+                  >
+                    <span className="font-mono text-foreground">?ref={c.channel}</span>
+                    <span className="tabular-nums text-muted-foreground">
+                      <span className="font-semibold text-foreground">
+                        {formatNum(c.downloads)}
+                      </span>{" "}
+                      · {formatNum(c.sessions)} sessions
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </Panel>
+          )}
+        </div>
+      )}
       {status === "ready" && rows.length === 0 && (
         <EmptyState
           title="No content engagement in this range"

@@ -23,6 +23,7 @@ export const EVENT_TYPES = [
   "chat_open",
   "chat_user_reply",
   "chat_ttft",
+  "resume_download",
 ] as const;
 
 export type EventType = (typeof EVENT_TYPES)[number];

@@ -13,6 +13,7 @@ import { ContactSection } from "@/components/contact-section";
 import { Footer } from "@/components/footer";
 import { CursorFollower } from "@/components/cursor-follower";
 import { ScrollProgress } from "@/components/scroll-progress";
+import { ResumeRail } from "@/components/resume-button";
 import {
   AnalyticsProvider,
   TrackedSection,
@@ -38,6 +39,7 @@ export default function Page() {
     <AnalyticsProvider>
     <main className="relative">
       <ScrollProgress />
+      <ResumeRail />
       <CursorFollower />
       <Navigation />
       <TrackedSection slug="hero">

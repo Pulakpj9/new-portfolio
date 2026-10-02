@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import { Menu, X } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { ResumeButton } from "@/components/resume-button"
 
 const navLinks = [
   { label: "About", href: "#about" },
@@ -130,7 +131,8 @@ export function Navigation() {
             >
               Get in Touch
             </a>
-            <div className="ml-3">
+            <div className="ml-3 flex items-center gap-2">
+              <ResumeButton spot="nav" variant="solid" size="sm" />
               <ThemeToggle />
             </div>
           </div>

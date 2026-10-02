@@ -8,6 +8,7 @@ interface MagneticButtonProps {
   className?: string
   onClick?: () => void
   href?: string
+  download?: string | boolean
   strength?: number
 }
 
@@ -16,6 +17,7 @@ export function MagneticButton({
   className,
   onClick,
   href,
+  download,
   strength = 0.3,
 }: MagneticButtonProps) {
   const ref = useRef<HTMLElement>(null)
@@ -54,6 +56,7 @@ export function MagneticButton({
       <a
         ref={ref as React.RefObject<HTMLAnchorElement>}
         href={href}
+        download={download}
         className={props.className}
         onClick={onClick}
         onMouseMove={handleMouseMove}

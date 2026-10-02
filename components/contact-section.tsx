@@ -5,6 +5,7 @@ import { useTheme } from "next-themes"
 import { useScrollAnimation } from "@/hooks/use-scroll-animation"
 import { MagneticButton } from "@/components/magnetic-button"
 import { tracker } from "@/lib/analytics/tracker"
+import { ResumeButton } from "@/components/resume-button"
 import { cn } from "@/lib/utils"
 import { ArrowUpRight } from "lucide-react"
 import { contactLinks, socialLinks } from "@/content/contact"
@@ -101,7 +102,7 @@ export function ContactSection() {
 
             <div
               className={cn(
-                "mt-10 transition-all duration-700 delay-300",
+                "mt-10 flex flex-wrap items-center gap-4 transition-all duration-700 delay-300",
                 headerVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
               )}
             >
@@ -115,6 +116,7 @@ export function ContactSection() {
                 Say Hello
                 <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
               </MagneticButton>
+              <ResumeButton spot="contact" variant="accent" />
             </div>
           </div>
 
